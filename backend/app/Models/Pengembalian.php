@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Pengembalian extends Model
 {
-    protected $table = 'peminjaman';
+    protected $table = 'pengembalian';
 
     protected $fillable = [
         'user_id',
@@ -26,7 +26,7 @@ class Pengembalian extends Model
     }
 
     public function user(): BelongsTo {
-        return $this-> belongsTo(User::class);
+        return $this->belongsTo(User::class);
     }
 
     public function detailPinjam(): HasMany {
