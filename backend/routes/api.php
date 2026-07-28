@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\API\KategoriController;
 
 // Public Routes (Tidak perlu token)
 Route::post('/register', [AuthController::class, 'register']);
@@ -13,7 +14,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
     Route::middleware('role.admin')->group(function () {
-        // Route untuk hak akses admin 
+        Route::apiResource('kategori', KategoriController::class); 
     });
     Route::middleware('role.petugas')->group(function () {
         // Route untuk hak akses petugas
