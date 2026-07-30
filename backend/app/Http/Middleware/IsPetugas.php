@@ -16,7 +16,7 @@ class IsPetugas
     public function handle(Request $request, Closure $next): Response
     {
         if ($request->user() && $request->user()->role === 'petugas') {
-            return $next($request)    
+            return $next($request);   
         }
 
             return response()->json(['message'  =>  'Akses ditolak, Anda buka Petugas.'], 403);

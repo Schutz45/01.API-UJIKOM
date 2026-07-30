@@ -25,6 +25,10 @@ class Peminjaman extends Model
         ];
     }
 
+    protected $casts = [
+        'tgl_kembali'   =>  'date',
+    ];
+
     public function user(): BelongsTo {
         return $this->belongsTo(User::class);
     }
