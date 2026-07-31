@@ -8,6 +8,7 @@ use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\PeminjamanController;
 use App\Http\Controllers\API\PengembalianController;
 use App\Http\Controllers\API\LogAktivitasController;
+use App\Http\Controllers\API\LaporanController;
 
 // Public Routes (Tidak perlu token)
 Route::post('/register', [AuthController::class, 'register']);
@@ -34,11 +35,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/pengembalian/{pengembalian}', [PengembalianController::class, 'update']);
         Route::delete('/pengembalian/{pengembalian}', [PengembalianController::class, 'destroy']);
         Route::get('/log-aktivitas', [LogAktivitasController::class, 'index']);
+        Route::get('/laporan-peminjaman', [LaporanController::class, 'index']);
     });
     Route::middleware('role.petugas')->group(function () {
         // Route untuk hak akses petugas
         Route::post('/peminjaman/{peminjaman}/approve', [PeminjamanController::class, 'approve']);
         Route::post('/pengembalian', [PengembalianController::class, 'store']);
+        Route::get('/laporan-peminjaman', [LaporanController::class, 'index']);
     });
     Route::middleware('role.peminjam')->group(function () {
         // Route untuk hak akses peminjam
