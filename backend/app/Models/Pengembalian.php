@@ -4,40 +4,31 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Pengembalian extends Model
 {
     protected $table = 'pengembalian';
 
     protected $fillable = [
-        'user_id',
-        'tgl_pinjam',
-        'tgl_kembali_plan',
-        'status'
+        'peminjaman_id',
+        'tgl_kembali',
+        'kondisi_kembali',
+        'denda',
+        'petugas_id'
     ];
 
     protected function casts(): array {
         return [
-            'tgl_pinjam' => 'date:Y-m-d',
-            'tgl_kembali_plan' => 'date:Y-m-d',
+            'tgl_kembali' => 'date:Y-m-d',
+            'denda'       => 'integer',
         ];
     }
 
-    protected $casts = [
-        'tgl_kembali'   =>  'date',
-    ];
-
-    public function user(): BelongsTo {
-        return $this->belongsTo(User::class);
+    public function peminjaman(): BelongsTo {
+        return $this->belongsTo(Peminjaman::class);
     }
 
-    public function detailPinjam(): HasMany {
-        return $this->hasMany(DetailPinjam::class);
-    }
-
-    public function pengembalian(): HasOne {
-        return $this->hasOne(Pengembalian::class);
+    public function petugas(): BelongsTo {
+        return $this->belongsTo(User::class, 'petugas_id');
     }
 }

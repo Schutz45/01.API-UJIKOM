@@ -101,7 +101,7 @@ class PeminjamanController extends Controller
 
         if ($peminjaman->status !== 'diajukan') {
             return response()->json([
-                'message'   =>  'Peminjaman tidak dapat diubah karena status saat ini: {$peminjaman->status}.'
+                'message'   =>  "Peminjaman tidak dapat diubah karena status saat ini: '{$peminjaman->status}'."
             ], 400);
         }
 
