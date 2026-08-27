@@ -32,7 +32,7 @@ class PengembalianObserver
     public function updated(Pengembalian $pengembalian): void
     {
         $perubahan = array_diff(array_keys($pengembalian->getChanges()), ['updated_at']);
-        if (!empty{$perubahan}) {
+        if (!empty($perubahan)) {
             $kolom  =   implode(', ', $perubahan);
             $this->catalog("Merevisi data pengembalian (ID Kembali: #{$pengembalian->id}, Peminjaman ID: #{$pengembalian->peminjaman_id}, Kolom diubah: {$kolom})");
         }

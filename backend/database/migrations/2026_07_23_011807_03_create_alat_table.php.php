@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('alat', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('kategori_id')->constrained('kategori')->cascadeOnDelete();
+            $table->foreignId('kategori_id')->constrained('kategori')->OnDelete('cascade');
             $table->string('nama_alat');
             $table->integer('stok')->default(0);
             $table->string('status_kondisi');
