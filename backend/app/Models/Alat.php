@@ -32,6 +32,8 @@ class Alat extends Model
     }
 
     public function scopeTersedia($query) {
-        return $query->where('stok', '>', 0)->where('status_kondisi', 'Baik');
+        return $query
+            ->where('stok', '>', 0)
+            ->whereRaw('LOWER(status_kondisi) = ?', ['baik']);
     }
 }

@@ -15,48 +15,60 @@
     <div class="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
 
         <!-- Header tabel -->
-        <div class="p-5 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+        <div class="p-5 border-b border-gray-200 bg-gray-50 flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
 
             <h3 class="text-lg font-bold text-gray-800">
                 Daftar Pengguna Sistem
             </h3>
-            <div class="flex items-center gap-3 w-full md:w-auto">
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+
                 <!-- Form Search -->
-                 <form action="{{ route('admin.user.index') }}" method="GET" class="flex w-full md:w-80">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama, email, role..."
-                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <button type="submit" class="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 text-sm font-semibold rounded-r-lg transition">
+                <form action="{{ route('admin.user.index') }}" method="GET" class="flex w-full sm:w-80">
+                    <input
+                        type="text"
+                        name="search"
+                        value="{{ request('search') }}"
+                        placeholder="Cari nama, email, role..."
+                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+
+                    <button
+                        type="submit"
+                        class="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 text-sm font-semibold rounded-r-lg transition whitespace-nowrap">
                         Cari
                     </button>
+
                     @if(request('search'))
-                        <a href="{{ route('admin.user.index') }}"
-                        class="ml-2 bg-gray-300 hover:bg-gray-400 text-gray-700 px-3 py-2 text-sm rounded-lg flex items-center transition" title="Reset Pencarian">
-                        Reset
-                    </a>
+                        <a
+                            href="{{ route('admin.user.index') }}"
+                            class="ml-2 bg-gray-300 hover:bg-gray-400 text-gray-700 px-3 py-2 text-sm rounded-lg flex items-center transition whitespace-nowrap">
+                            Reset
+                        </a>
                     @endif
-                 </form>
+                </form>
+
+                <!-- Tombol Tambah User -->
+                <a
+                    href="{{ route('admin.user.create') }}"
+                    class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition whitespace-nowrap text-center">
+                    + Tambah User
+                </a>
+
             </div>
-
-            <!-- Tombol Tambah User -->
-            <a href="{{ route('admin.user.create') }}"
-               class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition whitespace-nowrap">
-                + Tambah User
-            </a>
-
         </div>
 
         <!-- Tabel -->
-        <div class="overflow-x-auto">
+        <div class="w-full overflow-x-auto">
 
-            <table class="w-full text-left border-collapse">
+            <table class="min-w-[800px] w-full text-left border-collapse">
 
                 <thead>
                     <tr class="bg-gray-100 text-gray-600 text-sm uppercase tracking-wider">
-                        <th class="py-3 px-4 border-b">Nama</th>
-                        <th class="py-3 px-4 border-b">Email</th>
-                        <th class="py-3 px-4 border-b">Role / Hak Akses</th>
-                        <th class="py-3 px-4 border-b">No. HP</th>
-                        <th class="py-3 px-4 border-b">Aksi</th>
+                        <th class="py-3 px-4 border-b whitespace-nowrap">Nama</th>
+                        <th class="py-3 px-4 border-b whitespace-nowrap">Email</th>
+                        <th class="py-3 px-4 border-b whitespace-nowrap">Role / Hak Akses</th>
+                        <th class="py-3 px-4 border-b whitespace-nowrap">No. HP</th>
+                        <th class="py-3 px-4 border-b whitespace-nowrap">Aksi</th>
                     </tr>
                 </thead>
 
@@ -115,7 +127,7 @@
 
                             <td class="py-3 px-4 border-b">
 
-                                <div class="flex items-center space-x-2">
+                                <div class="flex items-center gap-2 whitespace-nowrap">
 
                                     <!-- Tombol Edit -->
                                     <a href="{{ route('admin.user.edit', $user->id) }}"
@@ -139,10 +151,6 @@
                                     </form>
 
                                 </div>
-
-                                <span class="text-gray-400 text-xs italic">
-                                    Kelola Data
-                                </span>
 
                             </td>
 

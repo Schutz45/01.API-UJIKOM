@@ -13,7 +13,10 @@ return new class extends Migration
     {
         Schema::create('pengembalian', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('peminjaman_id')->constrained('peminjaman')->cascadeOnDelete();
+            $table->foreignId('peminjaman_id')
+                ->unique()
+                ->constrained('peminjaman')
+                ->cascadeOnDelete();
             $table->date('tgl_kembali');
             $table->string('kondisi_kembali');
             $table->integer('denda')->default(0);

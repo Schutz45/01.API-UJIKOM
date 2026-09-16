@@ -15,7 +15,8 @@ class Peminjaman extends Model
         'user_id',
         'tgl_pinjam',
         'tgl_kembali_plan',
-        'status'
+        'status',
+        'permintaan_pengembalian',
     ];
 
     protected function casts(): array {
@@ -24,10 +25,6 @@ class Peminjaman extends Model
             'tgl_kembali_plan' => 'date:Y-m-d',
         ];
     }
-
-    protected $casts = [
-        'tgl_kembali'   =>  'date',
-    ];
 
     public function user(): BelongsTo {
         return $this->belongsTo(User::class);

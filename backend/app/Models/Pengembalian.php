@@ -13,6 +13,8 @@ class Pengembalian extends Model
         'peminjaman_id',
         'tgl_kembali',
         'kondisi_kembali',
+        'denda_keterlambatan',
+        'denda_kerusakan',
         'denda',
         'petugas_id'
     ];

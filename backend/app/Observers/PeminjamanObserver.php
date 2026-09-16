@@ -36,7 +36,7 @@ class PeminjamanObserver
             $this->catalog("Status peminjaman (ID: #{$peminjaman->id}) berubah menjadi: '{$peminjaman->status}'");
         } else {
             if (!empty($peminjaman->getChanges())) {
-                $this->catalog("Meperbarui detail data peminjaman (ID: #{$peminjaman->id})");
+                $this->catalog("Memperbarui detail data peminjaman (ID: #{$peminjaman->id})");
             }
         }
     }
@@ -46,6 +46,6 @@ class PeminjamanObserver
      */
     public function deleted(Peminjaman $peminjaman): void
     {
-        $this->catalog("Mebatalkan/menghapus permohonan peminjaman (ID: #{$peminjaman->id})");
+        $this->catalog("Pengajuan peminjaman (ID: #{$peminjaman->id}) ditolak dan dihapus");
     }
 }
