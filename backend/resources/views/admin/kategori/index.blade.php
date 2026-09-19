@@ -83,38 +83,76 @@
                 <tr class="bg-gray-100 text-gray-600 text-sm uppercase tracking-wider">
                     <th class="py-3 px-4 border-b w-16 text-center whitespace-nowrap">No</th>
                     <th class="py-3 px-4 border-b whitespace-nowrap">Nama Kategori</th>
+                    <th class="py-3 px-4 border-b w-32 whitespace-nowrap">Jumlah Alat</th>
+                    <th class="py-3 px-4 border-b w-40 whitespace-nowrap">Lihat Alat</th>
                     <th class="py-3 px-4 border-b w-48 whitespace-nowrap">Aksi</th>
                 </tr>
             </thead>
             <tbody class="text-gray-700 text-sm">
                 @forelse($kategoris as $index => $kategori)
+
                     <tr class="hover:bg-gray-50 transition">
-                        <td class="py-3 px-4 border-b text-center whitespace-nowrap">{{ $kategoris->firstItem() + $index }}</td>
-                        <td class="py-3 px-4 border-b font-medium text-gray-900 whitespace-nowrap">{{ $kategori->nama_kategori }}</td>
+
+                        {{-- No --}}
+                        <td class="py-3 px-4 border-b text-center whitespace-nowrap">
+                            {{ $kategoris->firstItem() + $index }}
+                        </td>
+
+                        {{-- Nama Kategori --}}
+                        <td class="py-3 px-4 border-b font-medium text-gray-900 whitespace-nowrap">
+                            {{ $kategori->nama_kategori }}
+                        </td>
+
+                        {{-- Jumlah Alat --}}
+                        <td class="py-3 px-4 border-b whitespace-nowrap">
+                            {{ $kategori->alat_count }} alat
+                        </td>
+
+                        {{-- Lihat Alat --}}
+                        <td class="py-3 px-4 border-b">
+                            <a href="{{ route('admin.kategori.alat', $kategori) }}"
+                                class="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition">
+                                Lihat Alat
+                            </a>
+                        </td>
+
+                        {{-- Aksi --}}
                         <td class="py-3 px-4 border-b">
                             <div class="flex items-center gap-2 whitespace-nowrap">
+
                                 <a href="{{ route('admin.kategori.edit', $kategori->id) }}"
-                                class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition">
+                                    class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition">
                                     Edit
                                 </a>
 
                                 <form action="{{ route('admin.kategori.destroy', $kategori->id) }}"
-                                method="POST" onsubmit="return confirm('Yakin ingin menghapus kategori ini?')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit"
-                                class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition">
-                                    Hapus
-                                </button>
-                            </form>
+                                    method="POST"
+                                    onsubmit="return confirm('Yakin ingin menghapus kategori ini?')">
+
+                                    @csrf
+                                    @method('DELETE')
+
+                                    <button type="submit"
+                                        class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition">
+                                        Hapus
+                                    </button>
+
+                                </form>
+
                             </div>
                         </td>
+
                     </tr>
-                    @empty
+
+                @empty
+
                     <tr>
-                        <td colspan="3" class="py-4 text-center text-gray-500">Belum ada data kategori.</td>
+                        <td colspan="5" class="py-4 text-center text-gray-500">
+                            Belum ada data kategori.
+                        </td>
                     </tr>
-                    @endforelse
+
+                @endforelse
             </tbody>
         </table>
     </div>

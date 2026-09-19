@@ -17,14 +17,39 @@
         </div>
 
         <div class="mb-4">
-            <label class="block text-gray-700 text-sm font-semibold mb-2">Kategori</label>
-            <select name="kategori_id" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <label class="block text-gray-700 text-sm font-semibold mb-2">
+                Kategori
+            </label>
+
+            <input
+                type="text"
+                id="kategori_nama"
+                list="daftar-kategori"
+                value="{{ old('kategori_nama', $alat->kategori->nama_kategori) }}"
+                required
+                placeholder="Cari atau pilih kategori..."
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+
+            <input
+                type="hidden"
+                name="kategori_id"
+                id="kategori_id"
+                value="{{ old('kategori_id', $alat->kategori_id) }}"
+            >
+
+            <datalist id="daftar-kategori">
                 @foreach ($kategoris as $kategori)
-                    <option value="{{ $kategori->id }}" {{ old('kategori_id', $alat->kategori_id) == $kategori->id ? 'selected' : '' }}>
-                        {{ $kategori->nama_kategori }}
+                    <option
+                        value="{{ $kategori->nama_kategori }}"
+                        data-id="{{ $kategori->id }}">
                     </option>
                 @endforeach
-            </select>
+            </datalist>
+
+            @error('kategori_id')
+                <span class="text-red-500 text-xs">{{ $message }}</span>
+            @enderror
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -34,9 +59,33 @@
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
             <div>
-                <label class="block text-gray-700 text-sm font-semibold mb-2">Status Kondisi</label>
-                <input type="text" name="status_kondisi" value="{{ old('status_kondisi', $alat->status_kondisi) }}" required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <label class="block text-gray-700 text-sm font-semibold mb-2">
+                    Status Kondisi
+                </label>
+
+                <select
+                    name="status_kondisi"
+                    required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                    <option
+                        value="baik"
+                        {{ old('status_kondisi', strtolower($alat->status_kondisi)) === 'baik' ? 'selected' : '' }}
+                    >
+                        Baik
+                    </option>
+
+                    <option
+                        value="rusak"
+                        {{ old('status_kondisi', strtolower($alat->status_kondisi)) === 'rusak' ? 'selected' : '' }}
+                    >
+                        Rusak
+                    </option>
+                </select>
+
+                @error('status_kondisi')
+                    <span class="text-red-500 text-xs">{{ $message }}</span>
+                @enderror
             </div>
         </div>
         <div class="mb-4">
@@ -69,5 +118,19 @@
     </form>
 
 </div>
+
+<script>
+    const kategoriNama = document.getElementById('kategori_nama');
+    const kategoriId = document.getElementById('kategori_id');
+    const daftarKategori = document.getElementById('daftar-kategori');
+
+    kategoriNama.addEventListener('input', function () {
+        const option = Array.from(daftarKategori.options).find(
+            option => option.value === this.value
+        );
+
+        kategoriId.value = option ? option.dataset.id : '';
+    });
+</script>
     
 @endsection

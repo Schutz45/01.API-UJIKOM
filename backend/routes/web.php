@@ -31,12 +31,13 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::delete('/users/{id}',    [AdminController::class, 'destroyUser'])    ->name('user.destroy');
 
     // CRUD Kategori
-    Route::get('/kategori',             [AdminController::class, 'indexKategori'])      ->name('kategori.index');
-    Route::get('/kategori/create',      [AdminController::class, 'createKategori'])     ->name('kategori.create');
-    Route::post('/kategori',            [AdminController::class, 'storeKategori'])      ->name('kategori.store');
-    Route::get('/kategori/{id}/edit',   [AdminController::class, 'editKategori'])       ->name('kategori.edit');
-    Route::put('/kategori/{id}',        [AdminController::class, 'updateKategori'])     ->name('kategori.update');
-    Route::delete('/kategori/{id}',     [AdminController::class, 'destroyKategori'])    ->name('kategori.destroy');
+    Route::get('/kategori',                 [AdminController::class, 'indexKategori'])      ->name('kategori.index');
+    Route::get('/kategori/create',          [AdminController::class, 'createKategori'])     ->name('kategori.create');
+    Route::post('/kategori',                [AdminController::class, 'storeKategori'])      ->name('kategori.store');
+    Route::get('/kategori/{id}/edit',       [AdminController::class, 'editKategori'])       ->name('kategori.edit');
+    Route::put('/kategori/{id}',            [AdminController::class, 'updateKategori'])     ->name('kategori.update');
+    Route::get('/kategori/{kategori}/alat', [AdminController::class, 'alatKategori'])       ->name('kategori.alat');
+    Route::delete('/kategori/{id}',         [AdminController::class, 'destroyKategori'])    ->name('kategori.destroy');
 
     // CRUD Peminjaman
     Route::get('/peminjaman',               [AdminController::class, 'indexPeminjaman'])        ->name('peminjaman.index');

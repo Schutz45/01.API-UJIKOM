@@ -184,7 +184,10 @@
                 value="{{ old('denda_kerusakan', 0) }}"
                 min="0"
                 step="1000"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                disabled
+                class="w-full border border-gray-300 rounded-lg px-3 py-2
+                focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                disabled:bg-gray-100 disabled:text-gray-400"
                 placeholder="Masukkan nominal denda kerusakan"
             >
 
@@ -234,5 +237,23 @@
 </div>
 
 </div>
+
+<script>
+    const kondisiKembali = document.getElementById('kondisi_kembali');
+    const dendaKerusakan = document.getElementById('denda_kerusakan');
+
+    function updateDendaKerusakan() {
+        if (kondisiKembali.value === 'rusak') {
+            dendaKerusakan.disabled = false;
+        } else {
+            dendaKerusakan.disabled = true;
+            dendaKerusakan.value = 0;
+        }
+    }
+
+    kondisiKembali.addEventListener('change', updateDendaKerusakan);
+
+    updateDendaKerusakan();
+</script>
 
 @endsection

@@ -371,9 +371,10 @@ class AdminController extends Controller
         $search = $request->input('search');
         $sort = $request->input('sort', 'terbaru');
 
-        $kategoris = Kategori::when($search, function ($query, $search) {
-            return $query->where('nama_kategori', 'like', "%{$search}%");
-        })
+        $kategoris = Kategori::withCount('alat')
+            ->when($search, function ($query, $search) {
+                return $query->where('nama_kategori', 'like', "%{$search}%");
+            })
             ->when($sort === 'terbaru', function ($query) {
                 return $query->orderBy('created_at', 'desc');
             })
@@ -453,6 +454,33 @@ class AdminController extends Controller
         $kategori->delete();
 
         return redirect()->route('admin.kategori.index')->with('success', 'Kategori berhasil dihapus.');
+    }
+
+    public function alatKategori(Request $request, Kategori $kategori)
+    {
+        $search = $request->input('search');
+        $kondisi = $request->input('kondisi');
+
+        $alats = $kategori->alat()
+            ->when($kondisi, function ($query, $kondisi) {
+                $query->whereRaw('LOWER(status_kondisi) = ?', [strtolower($kondisi)]);
+            })
+            ->when($search, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('nama_alat', 'like', "%{$search}%")
+                        ->orWhere('status_kondisi', 'like', "%{$search}%");
+                });
+            })
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('admin.kategori.alat', compact(
+            'kategori',
+            'alats',
+            'search',
+            'kondisi'
+        ));
     }
 
     // 1. Menampilkan daftar peminjaman
@@ -668,9 +696,9 @@ class AdminController extends Controller
         }
 
         $request->validate([
-            'tgl_kembali'      => 'required|date',
-            'kondisi_kembali'  => 'required|in:baik,rusak',
-            'denda_kerusakan'  => 'nullable|integer|min:0',
+            'tgl_kembali'     => 'required|date',
+            'kondisi_kembali' => 'required|in:baik,rusak',
+            'denda_kerusakan' => 'nullable|integer|min:0',
         ]);
 
         // Pastikan tanggal kembali tidak sebelum tanggal pinjam
@@ -710,18 +738,20 @@ class AdminController extends Controller
 
             // Simpan data pengembalian
             Pengembalian::create([
-                'peminjaman_id'         => $peminjaman->id,
-                'tgl_kembali'           => $request->tgl_kembali,
-                'kondisi_kembali'       => $request->kondisi_kembali,
-                'denda_keterlambatan'   => $dendaKeterlambatan,
-                'denda_kerusakan'       => $dendaKerusakan,
-                'denda'                 => $totalDenda,
-                'petugas_id'            => Auth::id(),
+                'peminjaman_id'       => $peminjaman->id,
+                'tgl_kembali'         => $request->tgl_kembali,
+                'kondisi_kembali'     => $request->kondisi_kembali,
+                'denda_keterlambatan' => $dendaKeterlambatan,
+                'denda_kerusakan'     => $dendaKerusakan,
+                'denda'               => $totalDenda,
+                'petugas_id'          => Auth::id(),
             ]);
 
-            // Kembalikan stok alat
-            foreach ($peminjaman->detailPinjam as $detail) {
-                $detail->alat->increment('stok', $detail->jumlah);
+            // Kembalikan stok hanya jika alat dalam kondisi baik
+            if ($request->kondisi_kembali === 'baik') {
+                foreach ($peminjaman->detailPinjam as $detail) {
+                    $detail->alat->increment('stok', $detail->jumlah);
+                }
             }
 
             // Ubah status peminjaman menjadi dikembalikan
@@ -733,7 +763,11 @@ class AdminController extends Controller
 
             return redirect()
                 ->route('admin.peminjaman.index')
-                ->with('success', 'Pengembalian berhasil diproses. Total denda: Rp' . number_format($totalDenda, 0, ',', '.'));
+                ->with(
+                    'success',
+                    'Pengembalian berhasil diproses. Total denda: Rp' .
+                    number_format($totalDenda, 0, ',', '.')
+                );
 
         } catch (\Exception $e) {
 
@@ -741,7 +775,10 @@ class AdminController extends Controller
 
             return back()
                 ->withInput()
-                ->with('error', 'Gagal memproses pengembalian: ' . $e->getMessage());
+                ->with(
+                    'error',
+                    'Gagal memproses pengembalian: ' . $e->getMessage()
+                );
         }
     }
 
