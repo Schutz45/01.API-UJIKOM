@@ -10,7 +10,7 @@
 
         <div class="mb-4">
             <label class="block text-gray-700 text-sm font-semibold mb-2">Nama Lengkap</label>
-            <input type="text" name="name" value="{{ old('name') }}" required
+            <input type="text" name="name" value="{{ old('name') }}"
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
 
             @error('name')
@@ -20,7 +20,7 @@
 
         <div class="mb-4">
             <label class="block text-gray-700 text-sm font-semibold mb-2">Email</label>
-            <input type="email" name="email" value="{{ old('email') }}" required
+            <input type="text" name="email" value="{{ old('email') }}"
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
 
             @error('email')
@@ -30,7 +30,7 @@
 
         <div class="mb-4">
             <label class="block text-gray-700 text-sm font-semibold mb-2">Password</label>
-            <input type="password" name="password" required
+            <input type="password" name="password"
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
 
             @error('password')

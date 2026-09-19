@@ -1,0 +1,40 @@
+services:
+
+  app-laravel:
+    image: sippsd-production:latest
+    container_name: sippsd-app-prod
+    restart: unless-stopped
+    working_dir: /var/www
+    env_file:
+      - ./backend/.env.production
+    depends_on:
+      mysql-server:
+        condition: service_healthy
+    networks:
+      - sippsd-prod
+
+  mysql-server:
+    image: mysql:8.0
+    container_name: sippsd-db-prod
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - sippsd_db_data:/var/lib/mysql
+    networks:
+      - sippsd-prod
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+networks:
+  sippsd-prod:
+    driver: bridge
+
+volumes:
+  sippsd_db_data:

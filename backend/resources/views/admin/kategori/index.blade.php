@@ -19,6 +19,37 @@
 
         <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
 
+            <!-- Form Sorting -->
+
+            <form action="{{ route('admin.kategori.index') }}" method="GET" class="flex items-center gap-2">
+                
+                @if(request('search'))
+                    <input type="hidden" name="search" value="{{ request('search') }}">
+                @endif
+
+                <select name="sort"
+                    onchange="this.form.submit()"
+                    class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+
+                    <option value="terbaru" {{ request('sort', 'terbaru') == 'terbaru' ? 'selected' : '' }}>
+                        Terbaru
+                    </option>
+
+                    <option value="terlama" {{ request('sort') == 'terlama' ? 'selected' : '' }}>
+                        Terlama
+                    </option>
+
+                    <option value="az" {{ request('sort') == 'az' ? 'selected' : '' }}>
+                        A → Z
+                    </option>
+
+                    <option value="za" {{ request('sort') == 'za' ? 'selected' : '' }}>
+                        Z → A
+                    </option>
+
+                </select>
+            </form>
+
             <!-- Form Search -->
 
             <form action="{{ route('admin.kategori.index') }}" method="GET" class="flex w-full sm:w-80">
@@ -34,6 +65,7 @@
                         </a>
                     @endif
             </form>
+
 
             <!-- Tombol Tambah -->
 

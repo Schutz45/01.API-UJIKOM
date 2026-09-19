@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class AdminController extends Controller
 {
@@ -64,20 +65,71 @@ class AdminController extends Controller
     public function indexAlat(Request $request)
     {
         $search = $request->input('search');
+        $kategori = $request->input('kategori', 'all');
+        $kondisi = $request->input('kondisi', 'all');
+        $sort = $request->input('sort', 'terbaru');
 
-        $alats  =   Alat::with('kategori')
-        ->when($search, function ($query, $search) {
-            return $query->where('nama_alat', 'like', "%{$search}%")
-                ->orWhere('status_kondisi', 'like', "%{$search}%")
-                ->orWhereHas('kategori', function($q) use($search) {
-                    $q->where('nama_kategori', 'like', "%{$search}%");
+        $alats = Alat::with('kategori')
+
+            // Search
+            ->when($search, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('nama_alat', 'like', "%{$search}%")
+                        ->orWhere('status_kondisi', 'like', "%{$search}%")
+                        ->orWhereHas('kategori', function ($kategoriQuery) use ($search) {
+                            $kategoriQuery->where(
+                                'nama_kategori',
+                                'like',
+                                "%{$search}%"
+                            );
+                        });
                 });
-        })
-        ->latest()
-        ->paginate(10)
-        ->withQueryString();
+            })
 
-        return view('admin.alat.index', compact('alats', 'search'));
+            // Filter kategori
+            ->when($kategori !== 'all', function ($query) use ($kategori) {
+                $query->where('kategori_id', $kategori);
+            })
+
+            // Filter kondisi
+            ->when($kondisi !== 'all', function ($query) use ($kondisi) {
+                $query->whereRaw(
+                    'LOWER(status_kondisi) = ?',
+                    [strtolower($kondisi)]
+                );
+            })
+
+            // Sorting
+            ->when($sort === 'terbaru', function ($query) {
+                $query->orderBy('created_at', 'desc');
+            })
+
+            ->when($sort === 'terlama', function ($query) {
+                $query->orderBy('created_at', 'asc');
+            })
+
+            ->when($sort === 'az', function ($query) {
+                $query->orderBy('nama_alat', 'asc');
+            })
+
+            ->when($sort === 'za', function ($query) {
+                $query->orderBy('nama_alat', 'desc');
+            })
+
+            ->paginate(10)
+            ->withQueryString();
+
+        // Data untuk dropdown kategori
+        $kategoris = Kategori::orderBy('nama_kategori', 'asc')->get();
+
+        return view('admin.alat.index', compact(
+            'alats',
+            'kategoris',
+            'search',
+            'kategori',
+            'kondisi',
+            'sort'
+        ));
     }
 
     public function createAlat()
@@ -158,18 +210,41 @@ class AdminController extends Controller
     // CRUD User (Manajemen User Admin, Petugas, Peminjam)
     public function indexUser(Request $request)
     {
-        $search  = $request->input('search');
-        
-        $users = User::when($search, function ($query, $search) {
-            return $query->where('name', 'Like', "%{$search}%")
-                ->orWhere('email', 'like', "%{$search}%")
-                ->orWhere('role', 'like', "%{$search}%");
-        })
-                ->latest()
-                ->paginate(10) // Tampilkan 10 data per halaman
-                ->withQueryString(); // Memastikan parameter search tetap ada saat pindah halaman
+        $search = $request->input('search');
+        $role = $request->input('role', 'all');
+        $sort = $request->input('sort', 'terbaru');
 
-            return view('admin.user.index', compact('users', 'search'));
+        $users = User::when($search, function ($query, $search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('role', 'like', "%{$search}%");
+            });
+        })
+            ->when($role !== 'all', function ($query) use ($role) {
+                $query->where('role', $role);
+            })
+            ->when($sort === 'terbaru', function ($query) {
+                $query->orderBy('created_at', 'desc');
+            })
+            ->when($sort === 'terlama', function ($query) {
+                $query->orderBy('created_at', 'asc');
+            })
+            ->when($sort === 'az', function ($query) {
+                $query->orderBy('name', 'asc');
+            })
+            ->when($sort === 'za', function ($query) {
+                $query->orderBy('name', 'desc');
+            })
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('admin.user.index', compact(
+            'users',
+            'search',
+            'role',
+            'sort'
+        ));
     }
 
     public function createUser()
@@ -182,11 +257,18 @@ class AdminController extends Controller
     {
         $request->validate([
             'name'         => 'required|string|max:255',
-            'email'        => 'required|string|email|max:255|unique:users',
+            'email'        => 'required|string|email|max:255|unique:users,email',
             'password'     => 'required|string|min:6',
             'role'         => 'required|in:admin,petugas,peminjam',
             'no_hp'        => 'nullable|string|max:20',
             'foto_profile' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+        ], [
+            'name.required'     => 'Nama wajib diisi.',
+            'email.required'    => 'Email wajib diisi.',
+            'email.email'       => 'Format email tidak sesuai.',
+            'email.unique'      => 'Email sudah terdaftar.',
+            'password.required' => 'Password wajib diisi.',
+            'password.min'      => 'Password minimal 6 karakter.',
         ]);
 
         $fotoProfile = null;
@@ -222,19 +304,33 @@ class AdminController extends Controller
         $user = User::findOrFail($id);
 
         $request->validate([
-            'name'         => 'required|string|max:255',
-            'email'        => 'required|string|email|max:255|unique:users,email,' . $id,
+            'name' => 'required|string|max:255',
+
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->ignore($user->id),
+            ],
+
             'role'         => 'required|in:admin,petugas,peminjam',
             'no_hp'        => 'nullable|string|max:20',
             'password'     => 'nullable|string|min:6',
             'foto_profile' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+        ], [
+            'name.required'     => 'Nama wajib diisi.',
+            'email.required'    => 'Email wajib diisi.',
+            'email.email'       => 'Format email tidak sesuai.',
+            'email.unique'      => 'Email sudah terdaftar.',
+            'password.min'      => 'Password minimal 6 karakter.',
         ]);
 
         $data = [
-            'name'    => $request->name,
-            'email'   => $request->email,
-            'role'    => $request->role,
-            'no_hp'   => $request->no_hp,
+            'name'  => $request->name,
+            'email' => $request->email,
+            'role'  => $request->role,
+            'no_hp' => $request->no_hp,
         ];
 
         // Jika password diisi, password diperbarui
@@ -273,15 +369,31 @@ class AdminController extends Controller
     public function indexKategori(Request $request)
     {
         $search = $request->input('search');
+        $sort = $request->input('sort', 'terbaru');
 
         $kategoris = Kategori::when($search, function ($query, $search) {
             return $query->where('nama_kategori', 'like', "%{$search}%");
         })
-            ->latest()
+            ->when($sort === 'terbaru', function ($query) {
+                return $query->orderBy('created_at', 'desc');
+            })
+            ->when($sort === 'terlama', function ($query) {
+                return $query->orderBy('created_at', 'asc');
+            })
+            ->when($sort === 'az', function ($query) {
+                return $query->orderBy('nama_kategori', 'asc');
+            })
+            ->when($sort === 'za', function ($query) {
+                return $query->orderBy('nama_kategori', 'desc');
+            })
             ->paginate(5)
             ->withQueryString();
 
-        return view('admin.kategori.index', compact('kategoris', 'search'));
+        return view('admin.kategori.index', compact(
+            'kategoris',
+            'search',
+            'sort'
+        ));
     }
 
     // 2. Menampilkan form tambah kategori
@@ -346,20 +458,57 @@ class AdminController extends Controller
     // 1. Menampilkan daftar peminjaman
     public function indexPeminjaman(Request $request)
     {
-        $search =   $request->input('search');
+        $search = $request->input('search');
+        $status = $request->input('status');
+        $sort = $request->input('sort', 'terbaru');
 
         $peminjamans = Peminjaman::with(['user', 'detailPinjam.alat'])
-            ->when($search, function ($query, $search) {
-                return $query->where('status', 'like', "%{$search}%")
-                    ->orWhere('user', function ($q) use ($search) {
-                        $q->where('name', 'like', "%{$search}%");
-                    });
+            // Filter status
+            ->when($status, function ($query, $status) {
+                $query->where('status', $status);
             })
-            ->latest()
+
+            // Search nama peminjam / status
+            ->when($search, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('status', 'like', "%{$search}%")
+                        ->orWhereHas('user', function ($q) use ($search) {
+                            $q->where('name', 'like', "%{$search}%");
+                        });
+                });
+            })
+
+            // Urutan data
+            ->when($sort === 'terbaru', function ($query) {
+                $query->latest();
+            })
+            ->when($sort === 'terlama', function ($query) {
+                $query->oldest();
+            })
+            ->when($sort === 'az', function ($query) {
+                $query->orderBy(
+                    User::select('name')
+                        ->whereColumn('users.id', 'peminjamans.user_id'),
+                    'asc'
+                );
+            })
+            ->when($sort === 'za', function ($query) {
+                $query->orderBy(
+                    User::select('name')
+                        ->whereColumn('users.id', 'peminjamans.user_id'),
+                    'desc'
+                );
+            })
+
             ->paginate()
             ->withQueryString();
 
-            return view('admin.peminjaman.index', compact('peminjamans', 'search'));
+        return view('admin.peminjaman.index', compact(
+            'peminjamans',
+            'search',
+            'status',
+            'sort'
+        ));
     }
 
     // 2. Menampilkan form tambah peminjaman
@@ -600,25 +749,65 @@ class AdminController extends Controller
     public function indexPengembalian(Request $request)
     {
         $search = $request->input('search');
+        $kondisi = $request->input('kondisi');
+        $sort = $request->input('sort', 'terbaru');
 
         $pengembalians = Pengembalian::with([
             'peminjaman.user',
             'peminjaman.detailPinjam.alat',
             'petugas'
         ])
-        ->when($search, function ($query, $search) {
-            return $query
-                ->whereHas('peminjaman.user', function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%");
-                })->orWhere('kondisi_kembali', 'like', "%{$search}%");
-        })
-        ->latest()
-        ->paginate(10)
-        ->withQueryString();
+            // Filter kondisi
+            ->when($kondisi, function ($query, $kondisi) {
+                $query->where('kondisi_kembali', $kondisi);
+            })
+
+            // Search nama peminjam / kondisi
+            ->when($search, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('kondisi_kembali', 'like', "%{$search}%")
+                        ->orWhereHas('peminjaman.user', function ($q) use ($search) {
+                            $q->where('name', 'like', "%{$search}%");
+                        });
+                });
+            })
+
+            // Urutan
+            ->when($sort === 'terbaru', function ($query) {
+                $query->latest();
+            })
+            ->when($sort === 'terlama', function ($query) {
+                $query->oldest();
+            })
+            ->when($sort === 'az', function ($query) {
+                $query->orderBy(
+                    User::select('name')
+                        ->whereColumn(
+                            'users.id',
+                            'peminjamans.user_id'
+                        ),
+                    'asc'
+                );
+            })
+            ->when($sort === 'za', function ($query) {
+                $query->orderBy(
+                    User::select('name')
+                        ->whereColumn(
+                            'users.id',
+                            'peminjamans.user_id'
+                        ),
+                    'desc'
+                );
+            })
+
+            ->paginate()
+            ->withQueryString();
 
         return view('admin.pengembalian.index', compact(
             'pengembalians',
-            'search'
+            'search',
+            'kondisi',
+            'sort'
         ));
     }
 

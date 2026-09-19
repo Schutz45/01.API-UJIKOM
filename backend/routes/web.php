@@ -7,7 +7,7 @@ use App\Http\Controllers\PeminjamController;
 use App\Http\Controllers\AuthController;
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('login');
 });
 
 // admin

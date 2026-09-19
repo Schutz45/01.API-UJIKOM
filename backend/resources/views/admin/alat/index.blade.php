@@ -11,32 +11,91 @@
     @endif
 
     <div class="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
-        <div class="p-5 border-b border-gray-200 bg-gray-50 flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
-            <h3 class="text-lg font-bold text-gray-800">Daftar Alat Laboratorium</h3>
+        <div class="p-5 border-b border-gray-200 bg-gray-50">
 
-            <div class="flex items-center gap-3 w-full md:w-auto">
-                <!-- Form Search --> 
+            <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
 
-                <form action="{{ route('admin.alat.index') }}" method="GET" class="flex w-full md:w-80">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama alat, kategori..."
-                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <button type="submit" class="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 text-sm font-semibold rounded-r-lg transition whitespace-nowrap">
-                            Cari
-                        </button>
-                        @if(request('search'))
+                {{-- Judul --}}
+                <div>
+                    <h3 class="text-lg font-bold text-gray-800">
+                        Daftar Alat
+                    </h3>
+                </div>
+
+                {{-- Kontrol --}}
+                <div class="flex flex-col lg:flex-row gap-3 w-full xl:w-auto">
+
+                    {{-- Filter + Search --}}
+                    <form action="{{ route('admin.alat.index') }}"
+                        method="GET"
+                        class="flex flex-col sm:flex-row sm:flex-wrap gap-2 w-full xl:w-auto">
+
+                        {{-- Filter --}}
+                        <select name="sort"
+                            class="w-full sm:w-auto px-3 py-2 text-sm border border-gray-300 rounded-lg
+                            bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+
+                            <option value="terbaru"
+                                {{ request('sort', 'terbaru') == 'terbaru' ? 'selected' : '' }}>
+                                Terbaru
+                            </option>
+
+                            <option value="terlama"
+                                {{ request('sort') == 'terlama' ? 'selected' : '' }}>
+                                Terlama
+                            </option>
+
+                            <option value="az"
+                                {{ request('sort') == 'az' ? 'selected' : '' }}>
+                                A → Z
+                            </option>
+
+                            <option value="za"
+                                {{ request('sort') == 'za' ? 'selected' : '' }}>
+                                Z → A
+                            </option>
+                        </select>
+
+                        {{-- Search --}}
+                        <div class="flex w-full sm:w-80">
+                            <input
+                                type="text"
+                                name="search"
+                                value="{{ request('search') }}"
+                                placeholder="Cari nama alat / kategori / kondisi..."
+                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-l-lg
+                                focus:outline-none focus:ring-2 focus:ring-blue-500">
+
+                            <button type="submit"
+                                class="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2
+                                text-sm font-semibold rounded-r-lg transition whitespace-nowrap">
+                                Cari
+                            </button>
+                        </div>
+
+                        {{-- Reset --}}
+                        @if (request('search') || request('sort'))
                             <a href="{{ route('admin.alat.index') }}"
-                            class="ml-2 bg-gray-300 hover:bg-gray-400 text-gray-700 px-3 py-2 text-sm rounded-lg flex items-center transition whitespace-nowrap">
+                                class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-3 py-2
+                                text-sm rounded-lg flex items-center justify-center transition whitespace-nowrap">
                                 Reset
                             </a>
                         @endif
-                </form>
 
-                <!-- Tombol Tambah -->
-                 <a href="{{ route('admin.alat.create') }}"
-                    class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition whitespace-nowrap">
-                    + Tambah Alat
-                </a>
+                    </form>
+
+                    {{-- Tambah --}}
+                    <a href="{{ route('admin.alat.create') }}"
+                        class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold
+                        px-4 py-2 rounded-lg transition whitespace-nowrap text-center
+                        flex items-center justify-center">
+                        + Tambah Alat
+                    </a>
+
+                </div>
+
             </div>
+
         </div>
         <div class="w-full overflow-x-auto">
             <table class="min-w-[600px] w-full text-left border-collapse">

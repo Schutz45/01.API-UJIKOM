@@ -20,37 +20,90 @@
             <h3 class="text-lg font-bold text-gray-800">
                 Daftar Pengguna Sistem
             </h3>
-            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+            <div class="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 w-full lg:w-auto">
 
-                <!-- Form Search -->
-                <form action="{{ route('admin.user.index') }}" method="GET" class="flex w-full sm:w-80">
+                <!-- Form Search + Filter -->
+                <form action="{{ route('admin.user.index') }}" method="GET"
+                    class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto">
+
+                    <!-- Filter Role -->
+                    <select
+                        name="role"
+                        class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        <option value="all" {{ request('role', 'all') == 'all' ? 'selected' : '' }}>
+                            Semua Role
+                        </option>
+
+                        <option value="admin" {{ request('role') == 'admin' ? 'selected' : '' }}>
+                            Admin
+                        </option>
+
+                        <option value="petugas" {{ request('role') == 'petugas' ? 'selected' : '' }}>
+                            Petugas
+                        </option>
+
+                        <option value="peminjam" {{ request('role') == 'peminjam' ? 'selected' : '' }}>
+                            Peminjam
+                        </option>
+                    </select>
+
+                    <!-- Urutan -->
+                    <select
+                        name="sort"
+                        class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        <option value="terbaru" {{ request('sort', 'terbaru') == 'terbaru' ? 'selected' : '' }}>
+                            Terbaru
+                        </option>
+
+                        <option value="terlama" {{ request('sort') == 'terlama' ? 'selected' : '' }}>
+                            Terlama
+                        </option>
+
+                        <option value="az" {{ request('sort') == 'az' ? 'selected' : '' }}>
+                            A → Z
+                        </option>
+
+                        <option value="za" {{ request('sort') == 'za' ? 'selected' : '' }}>
+                            Z → A
+                        </option>
+                    </select>
+
+                    <!-- Search -->
                     <input
                         type="text"
                         name="search"
                         value="{{ request('search') }}"
                         placeholder="Cari nama, email, role..."
-                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        class="w-full sm:w-64 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
 
+                    <!-- Tombol Cari -->
                     <button
                         type="submit"
-                        class="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 text-sm font-semibold rounded-r-lg transition whitespace-nowrap">
+                        class="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 text-sm font-semibold rounded-lg transition whitespace-nowrap"
+                    >
                         Cari
                     </button>
 
-                    @if(request('search'))
+                    <!-- Reset -->
+                    @if(request('search') || request('role') || request('sort'))
                         <a
                             href="{{ route('admin.user.index') }}"
-                            class="ml-2 bg-gray-300 hover:bg-gray-400 text-gray-700 px-3 py-2 text-sm rounded-lg flex items-center transition whitespace-nowrap">
+                            class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-3 py-2 text-sm rounded-lg flex items-center justify-center transition whitespace-nowrap"
+                        >
                             Reset
                         </a>
                     @endif
+
                 </form>
 
                 <!-- Tombol Tambah User -->
                 <a
                     href="{{ route('admin.user.create') }}"
-                    class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition whitespace-nowrap text-center">
+                    class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition whitespace-nowrap text-center"
+                >
                     + Tambah User
                 </a>
 
