@@ -24,6 +24,8 @@ Route::middleware('auth:sanctum')->group(function () {
         // Route untuk hak akses admin
         Route::apiResource('kategori', KategoriController::class);
         Route::apiResource('alat', AlatController::class);
+        Route::post('/alat/{alat}/tandai-rusak', [AlatController::class, 'tandaiRusak']);
+        Route::post('/alat/{alat}/perbaiki', [AlatController::class, 'perbaiki']);
         Route::get('/katalog', [AlatController::class, 'katalog']);
         Route::apiResource('users', UserController::class);
         Route::get('/peminjaman', [PeminjamanController::class, 'index']);

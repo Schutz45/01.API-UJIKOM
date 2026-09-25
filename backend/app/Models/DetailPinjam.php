@@ -12,11 +12,12 @@ class DetailPinjam extends Model
     protected $fillable = [
         'peminjaman_id',
         'alat_id',
-        'jumlah'
+        'jumlah',
+        'jumlah_rusak'
     ];
 
     protected function casts(): array {
-        return ['jumlah' => 'integer'];
+        return ['jumlah' => 'integer', 'jumlah_rusak' => 'integer'];
     }
 
     public function peminjaman(): BelongsTo {

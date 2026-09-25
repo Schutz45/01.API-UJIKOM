@@ -98,32 +98,27 @@
 
                             <thead class="bg-gray-100 text-gray-600">
                                 <tr>
-                                    <th class="px-4 py-3 border-b">
-                                        Nama Alat
-                                    </th>
-
-                                    <th class="px-4 py-3 border-b text-center">
-                                        Jumlah
-                                    </th>
+                                    <th class="px-4 py-3 border-b">Nama Alat</th>
+                                    <th class="px-4 py-3 border-b text-center">Dipinjam</th>
+                                    <th class="px-4 py-3 border-b text-center kol-rusak hidden">Jumlah Rusak</th>
                                 </tr>
                             </thead>
-
                             <tbody>
-
                                 @foreach($peminjaman->detailPinjam as $detail)
-
                                     <tr>
-                                        <td class="px-4 py-3 border-b">
-                                            {{ $detail->alat->nama_alat ?? 'Alat Dihapus' }}
-                                        </td>
-
-                                        <td class="px-4 py-3 border-b text-center">
-                                            {{ $detail->jumlah }}
+                                        <td class="px-4 py-3 border-b font-medium">{{ $detail->alat->nama_alat ?? 'Alat Dihapus' }}</td>
+                                        <td class="px-4 py-3 border-b text-center font-bold">{{ $detail->jumlah }}</td>
+                                        <td class="px-4 py-3 border-b text-center kol-rusak hidden">
+                                            <input type="number" 
+                                                   name="jumlah_rusak[{{ $detail->alat_id }}]" 
+                                                   min="0" 
+                                                   max="{{ $detail->jumlah }}" 
+                                                   placeholder="{{ $detail->jumlah }}"
+                                                   class="w-24 px-2 py-1 text-center border border-red-300 rounded focus:ring-red-500 focus:border-red-500">
+                                            <span class="block text-[10px] text-gray-500 mt-0.5">Kosong = semua ({{ $detail->jumlah }})</span>
                                         </td>
                                     </tr>
-
                                 @endforeach
-
                             </tbody>
 
                         </table>
@@ -233,4 +228,22 @@
 
     </div>
 
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const kondisiSelect = document.querySelector('select[name="kondisi_kembali"]');
+        const kolRusak = document.querySelectorAll('.kol-rusak');
+
+        function toggleRusak() {
+            if (kondisiSelect.value === 'rusak') {
+                kolRusak.forEach(el => el.classList.remove('hidden'));
+            } else {
+                kolRusak.forEach(el => el.classList.add('hidden'));
+            }
+        }
+
+        kondisiSelect.addEventListener('change', toggleRusak);
+        toggleRusak();
+    });
+</script>
 @endsection

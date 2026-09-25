@@ -295,11 +295,7 @@
 
                         </div>
 
-                        <i
-                            class="bi bi-chevron-down
-                                   text-xs text-slate-400
-                                   hidden sm:block">
-                        </i>
+                        
 
                     </div>
 

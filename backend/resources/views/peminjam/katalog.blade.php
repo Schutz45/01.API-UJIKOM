@@ -349,41 +349,48 @@
                                 ($alat->kategori->nama_kategori ?? '')
                             ) }}">
 
+                        
                         {{-- =============================
-                             GAMBAR ALAT
+                            GAMBAR ALAT
                         ============================== --}}
                         <div
-                            class="h-48
-                                   bg-slate-100
-                                   flex items-center
-                                   justify-center
-                                   overflow-hidden">
+                            class="w-full
+                                h-64
+                                bg-slate-100
+                                overflow-hidden">
 
                             @if($alat->gambar)
 
                                 <img
                                     src="{{ asset($alat->gambar) }}"
                                     alt="{{ $alat->nama_alat }}"
-                                    class="w-full h-full
-                                           object-contain
-                                           p-4
-                                           transition duration-300
-                                           hover:scale-105">
+                                    class="w-full
+                                        h-full
+                                        object-cover
+                                        object-center
+                                        transition
+                                        duration-300
+                                        hover:scale-105">
 
                             @else
 
                                 <div
-                                    class="flex flex-col
-                                           items-center
-                                           text-slate-400">
+                                    class="w-full
+                                        h-full
+                                        flex
+                                        flex-col
+                                        items-center
+                                        justify-center
+                                        text-slate-400">
 
                                     <i
                                         class="bi bi-image
-                                               text-5xl">
+                                            text-5xl">
                                     </i>
 
                                     <span
-                                        class="text-xs mt-2">
+                                        class="text-xs
+                                            mt-2">
 
                                         Tidak ada gambar
 

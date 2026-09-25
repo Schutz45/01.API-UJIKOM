@@ -47,4 +47,18 @@ class User extends Authenticatable
     public function logAktivitas(): HasMany {
         return $this->hasMany(LogAktivitas::class);
     }
+
+    public function notifikasi(): HasMany {
+        return $this->hasMany(Notifikasi::class);
+    }
+
+    /*
+    |----------------------------------------------------------------------
+    | Helper: jumlah notifikasi yang belum dibaca (untuk ikon Lonceng)
+    |----------------------------------------------------------------------
+    */
+    public function jumlahNotifikasiBelumDibaca(): int
+    {
+        return (int) $this->notifikasi()->where('dibaca', false)->count();
+    }
 }

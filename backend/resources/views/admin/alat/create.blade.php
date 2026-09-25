@@ -45,7 +45,7 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
-                    <label class="block text-gray-700 text-sm font-semibold mb-2">Stok</label>
+                    <label class="block text-gray-700 text-sm font-semibold mb-2">Stok (Baik)</label>
                     <input type="number" name="stok" value="{{ old('stok', 1) }}" min="0" required
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     @error ('stok')
@@ -53,26 +53,11 @@
                     @enderror
                 </div>
                 <div>
-                    <label class="block text-gray-700 text-sm font-semibold mb-2">Status Kondisi</label>
-                    <select
-                        name="status_kondisi"
-                        required
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                        <option value="baik"
-                            {{ old('status_kondisi', 'baik') === 'baik' ? 'selected' : '' }}>
-                            Baik
-                        </option>
-
-
-                        <option value="rusak"
-                            {{ old('status_kondisi') === 'rusak' ? 'selected' : '' }}>
-                            Rusak
-                        </option>
-
-                    </select>
-                    @error ('status_kondisi')
-                         <span class="text-red-500 text-xs">{{ $message }}</span>        
+                    <label class="block text-gray-700 text-sm font-semibold mb-2">Stok Rusak</label>
+                    <input type="number" name="stok_rusak" value="{{ old('stok_rusak', 0) }}" min="0" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    @error ('stok_rusak')
+                        <span class="text-red-500 text-xs"> {{ $message }} </span>
                     @enderror
                 </div>
             </div>

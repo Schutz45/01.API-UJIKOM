@@ -1,0 +1,50 @@
+{
+  "sheets": [
+    {
+      "name": "Test Case SIPPSD",
+      "rows": [
+        ["Test Case Aplikasi Peminjaman Alat (SIPPSD) - Berdasarkan Implementasi Project"],
+        [],
+        ["1. Login & Autentikasi"],
+        ["ID", "Scenario", "Title", "Steps", "Test Data", "Expected Result", "Actual Result", "Status"],
+        ["LOGIN-1", "Login", "Login berhasil dengan kredensial valid", "1. Buka halaman login\n2. Masukkan email & password\n3. Klik Login", "Email & password valid", "User diarahkan ke dashboard sesuai role", "User berhasil login", "PASS"],
+        ["LOGIN-2", "Login", "Login gagal password salah", "1. Buka login\n2. Masukkan password salah", "Password salah", "Sistem menolak login & pesan error muncul", "Login gagal, pesan error muncul", "PASS"],
+        ["LOGIN-3", "Akses", "Akses URL tanpa login", "1. Akses /dashboard tanpa login", "Tanpa sesi login", "Ditolak & diredirect ke halaman login", "Diredirect ke login", "PASS"],
+        [],
+        ["2. Kelola Alat (CRUD & Stok Rusak)"],
+        ["ID", "Scenario", "Title", "Steps", "Test Data", "Expected Result", "Actual Result", "Status"],
+        ["ALAT-1", "Tambah Alat", "Tambah alat baru dengan data valid", "1. Buka menu Alat\n2. Klik Tambah\n3. Isi form & simpan", "Nama, Kategori, Stok valid", "Alat berhasil ditambahkan", "Alat tersimpan di DB", "PASS"],
+        ["ALAT-2", "Tambah Alat", "Validasi input kosong", "1. Klik Tambah\n2. Kosongkan nama alat\n3. Simpan", "Nama kosong", "Validasi 'Nama wajib diisi' muncul", "Pesan validasi muncul", "PASS"],
+        ["ALAT-3", "Tandai Rusak", "Tandai alat rusak valid", "1. Edit alat\n2. Masukkan jumlah rusak <= stok", "Jumlah rusak: 2 (Stok: 10)", "Stok baik berkurang 2, stok rusak bertambah 2", "Stok terupdate otomatis", "PASS"],
+        ["ALAT-4", "Tandai Rusak", "Tandai alat rusak melebihi stok", "1. Masukkan jumlah rusak > stok", "Jumlah: 15 (Stok: 10)", "Ditolak: 'Jumlah tidak boleh melebihi stok'", "Pesan error muncul", "PASS"],
+        ["ALAT-5", "Perbaiki Alat", "Perbaikan alat rusak", "1. Masukkan jumlah perbaikan <= stok rusak", "Jumlah perbaikan: 2", "Stok rusak berkurang, stok baik bertambah", "Stok pulih ke kondisi baik", "PASS"],
+        ["ALAT-6", "Hapus Alat", "Hapus alat yang memiliki riwayat pinjam", "1. Klik Hapus alat", "Alat pernah dipinjam", "Ditolak: 'Alat memiliki riwayat peminjaman'", "Penghapusan diblokir", "PASS"],
+        [],
+        ["3. Kelola Kategori"],
+        ["ID", "Scenario", "Title", "Steps", "Test Data", "Expected Result", "Actual Result", "Status"],
+        ["KAT-1", "Tambah Kategori", "Tambah kategori valid", "1. Tambah kategori baru", "Nama: Jaringan", "Kategori berhasil ditambahkan", "Kategori tersimpan", "PASS"],
+        ["KAT-2", "Tambah Kategori", "Kategori duplikat", "1. Tambah kategori dengan nama sama", "Nama: Jaringan (sudah ada)", "Ditolak: 'Nama kategori sudah terdaftar'", "Validasi unik berhasil", "PASS"],
+        ["KAT-3", "Hapus Kategori", "Hapus kategori yang masih dipakai alat", "1. Hapus kategori yang memiliki relasi alat", "Kategori aktif", "Ditolak: 'Kategori masih digunakan oleh alat'", "Penghapusan diblokir", "PASS"],
+        [],
+        ["4. Kelola User"],
+        ["ID", "Scenario", "Title", "Steps", "Test Data", "Expected Result", "Actual Result", "Status"],
+        ["USER-1", "Tambah User", "Tambah user dengan email unik", "1. Isi form user baru", "Nama, email unik, password", "User berhasil ditambahkan", "User tersimpan", "PASS"],
+        ["USER-2", "Tambah User", "Email sudah terdaftar", "1. Isi email yang sudah ada", "Email terdaftar", "Ditolak: 'Email sudah terdaftar'", "Pesan validasi unik muncul", "PASS"],
+        [],
+        ["5. Peminjaman Alat"],
+        ["ID", "Scenario", "Title", "Steps", "Test Data", "Expected Result", "Actual Result", "Status"],
+        ["PINJAM-1", "Ajukan Peminjaman", "Pinjam alat dengan stok cukup", "1. Pilih alat & jumlah <= stok\n2. Ajukan", "Jumlah: 2, Stok: 5", "Peminjaman diajukan dengan status 'diajukan'", "Status 'diajukan' tersimpan", "PASS"],
+        ["PINJAM-2", "Ajukan Peminjaman", "Pinjam alat melebihi stok", "1. Pilih jumlah > stok tersedia", "Jumlah: 10, Stok: 2", "Ditolak: 'Stok alat tidak mencukupi'", "Gagal mengajukan pinjaman", "PASS"],
+        ["PINJAM-3", "Update Status", "Setujui peminjaman", "1. Ubah status dari 'diajukan' ke 'dipinjam'", "Status: dipinjam", "Stok alat berkurang secara otomatis", "Stok berkurang & status 'dipinjam'", "PASS"],
+        [],
+        ["6. Pengembalian Alat & Denda"],
+        ["ID", "Scenario", "Title", "Steps", "Test Data", "Expected Result", "Actual Result", "Status"],
+        ["KEMBALI-1", "Proses Pengembalian", "Pengembalian tepat waktu & kondisi baik", "1. Proses kembali\n2. Pilih kondisi baik", "Tgl kembali <= rencana", "Status 'dikembalikan', denda Rp0, stok kembali utuh", "Pengembalian sukses", "PASS"],
+        ["KEMBALI-2", "Proses Pengembalian", "Pengembalian terlambat", "1. Proses kembali melewati tanggal rencana", "Tgl kembali > rencana (selisih 2 hari)", "Denda keterlambatan otomatis Rp2.000 (2x1000)", "Denda keterlambatan terhitung", "PASS"],
+        ["KEMBALI-3", "Proses Pengembalian", "Pengembalian dengan kerusakan sebagian", "1. Pilih kondisi rusak\n2. Isi jumlah rusak", "Pinjam: 5, Rusak: 2", "Stok baik +3, stok rusak +2, catat jumlah rusak", "Stok terbagi benar", "PASS"],
+        ["KEMBALI-4", "Proses Pengembalian", "Pengembalian rusak total (kosongkan input)", "1. Pilih kondisi rusak\n2. Kosongkan detail jumlah rusak", "Pinjam: 5, Rusak: [kosong]", "Seluruh unit (5) otomatis dicatat rusak", "Stok rusak bertambah 5", "PASS"],
+        ["KEMBALI-5", "Hapus Pengembalian", "Hapus data pengembalian", "1. Hapus riwayat pengembalian", "ID Pengembalian", "Status kembali ke 'dipinjam', stok ditarik ulang", "State dikembalikan ke sebelum kembali", "PASS"]
+      ]
+    }
+  ]
+}

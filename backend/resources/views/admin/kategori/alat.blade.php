@@ -97,7 +97,9 @@
                 {{-- Kembali --}}
                 <a
                     href="{{ route('admin.kategori.index') }}"
-                    class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 text-sm font-semibold rounded-lg transition whitespace-nowrap text-center"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2
+                        text-sm font-semibold rounded-lg flex items-center justify-center
+                        transition whitespace-nowrap"
                 >
                     ← Kembali
                 </a>
@@ -134,10 +136,6 @@
                     </th>
 
                     <th class="px-6 py-3 text-xs font-semibold text-gray-600 uppercase">
-                        Kondisi
-                    </th>
-
-                    <th class="px-6 py-3 text-xs font-semibold text-gray-600 uppercase">
                         Deskripsi
                     </th>
 
@@ -168,28 +166,6 @@
 
                         <td class="px-6 py-4 text-sm text-gray-700">
                             {{ $alat->stok }}
-                        </td>
-
-                        <td class="px-6 py-4 text-sm">
-                            @if (strtolower($alat->status_kondisi) === 'baik')
-
-                                <span class="inline-flex px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-700">
-                                    {{ $alat->status_kondisi }}
-                                </span>
-
-                            @elseif (strtolower($alat->status_kondisi) === 'rusak')
-
-                                <span class="inline-flex px-2.5 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-700">
-                                    {{ $alat->status_kondisi }}
-                                </span>
-
-                            @else
-
-                                <span class="inline-flex px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-700">
-                                    {{ $alat->status_kondisi }}
-                                </span>
-
-                            @endif
                         </td>
 
                         <td class="px-6 py-4 text-sm text-gray-600">

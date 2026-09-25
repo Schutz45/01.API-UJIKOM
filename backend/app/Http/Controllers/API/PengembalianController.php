@@ -68,15 +68,21 @@ class PengembalianController extends Controller
                 // 2. Ubah status di tabel peminjaman utama
                 $peminjaman->update(['status'   =>  $statusPeminjamanBaru]);
 
-                // 3. Kembalikan (tambah) stok alat berdasarkan detail_pinjam
+                // 3. Kembalikan (tambah) stok alat berdasarkan detail_pinjam dan kondisi
                 foreach($peminjaman->detailPinjam as $detail) {
                     $alat   =   Alat::lockForUpdate()->find($detail->alat_id);
-                    // Increment() otomatis menambah nilai pada field yang ditentukan
-                    $alat->increment('stok', $detail->jumlah);
+                    if ($alat) {
+                        if ($request->kondisi_kembali === 'rusak') {
+                            $alat->increment('stok_rusak', $detail->jumlah);
+                        } else {
+                            $alat->increment('stok', $detail->jumlah);
+                        }
+                    }
                 }
 
                 // Opsional: Catat ke log aktivitas petugas
                 auth()->user()->logAktivitas()->create([
+                    'jenis'     =>  'pengembalian',
                     'aktivitas' =>  "Memproses pengembalian ID: #{$peminjaman->id} dengan status akhir: {$statusPeminjamanBaru}."
                 ]);
 
@@ -141,21 +147,28 @@ class PengembalianController extends Controller
             DB::transaction(function () use ($pengembalian) {
                 $peminjaman = Peminjaman::with('detailPinjam')->lockForUpdate()->findOrFail($pengembalian->peminjaman_id);
 
-                // Tarik kembali stok ke gudang (karena status kembali dibatalkan, stok berkurang lagi)
+                // Tarik kembali stok ke gudang berdasarkan kondisi sebelumnya
                 foreach ($peminjaman->detailPinjam as $detail) {
                     $alat = Alat::lockForUpdate()->findOrFail($detail->alat_id);
-                    if ($alat->stok < $detail->jumlah) {
-                        throw new Exception("Gagal membatalkan pengembalian. Stok alat '{$alat->nama_alat}' saat ini tidak mencukupi untuk ditarik kembali.");
+                    
+                    if ($pengembalian->kondisi_kembali === 'rusak') {
+                        if ($alat->stok_rusak < $detail->jumlah) {
+                             throw new Exception("Gagal membatalkan pengembalian. Stok rusak '{$alat->nama_alat}' tidak mencukupi.");
+                        }
+                        $alat->decrement('stok_rusak', $detail->jumlah);
+                    } else {
+                        if ($alat->stok < $detail->jumlah) {
+                            throw new Exception("Gagal membatalkan pengembalian. Stok alat '{$alat->nama_alat}' tidak mencukupi.");
+                        }
+                        $alat->decrement('stok', $detail->jumlah);
                     }
-
-                    $alat->decrement('stok', $detail->jumlah);
                 }
 
                 // Kembalikan status peminjaman master menjadi dipinjam kembali
                 $peminjaman->update(['status'   =>  'dipinjam']);
 
                 // Log Aktivitas jika metode/relasi tersedia
-                auth()->user()->logAktivitas()?->create(['aktivitas'    =>  "Membatalkan pengembalian ID: #{$pengembalian->id}"]);
+                auth()->user()->logAktivitas()?->create(['jenis' => 'pengembalian', 'aktivitas'    =>  "Membatalkan pengembalian ID: #{$pengembalian->id}"]);
 
                 $pengembalian->delete();
             });

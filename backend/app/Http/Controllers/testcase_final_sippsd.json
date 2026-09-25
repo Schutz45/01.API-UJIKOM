@@ -1,0 +1,36 @@
+{
+  "sheets": [
+    {
+      "name": "TestCase-Full",
+      "rows": [
+        ["Test Case Aplikasi Peminjaman Alat (SIPPSD) - Full Suite"],
+        [],
+        ["--- LOGIN/LOGOUT ---"],
+        ["ID", "Scenario", "Title", "Steps", "Test Data", "Expected Result", "Actual Result", "Status"],
+        ["LOGIN-P-01", "Login-Positif", "Login Admin valid", "1. Buka Login\n2. Input Admin valid", "Email & Pass Admin", "Arahkan ke Dashboard Admin", "", "PASS"],
+        ["LOGIN-N-01", "Login-Negatif", "Password Salah", "1. Input Email valid\n2. Input Pass salah", "Pass: 'salah'", "Pesan error 'email/password salah'", "", "PASS"],
+        [],
+        ["--- ADMIN: KELOLA USER (Rinci) ---"],
+        ["ID", "Scenario", "Title", "Steps", "Test Data", "Expected Result", "Actual Result", "Status"],
+        ["USER-P-01", "Admin-Positif", "Tambah User Valid", "1. Admin klik Tambah User\n2. Isi nama, email, pass, role, no_hp\n3. Simpan", "Email unik, Role: Petugas", "User tersimpan, redirect ke index", "", "PASS"],
+        ["USER-P-02", "Admin-Positif", "Edit User Valid", "1. Admin klik Edit User\n2. Update nama/role\n3. Simpan", "Data update valid", "User terupdate di database", "", "PASS"],
+        ["USER-N-01", "Admin-Negatif", "Email Duplikat", "1. Klik Tambah User\n2. Isi email milik user lain", "Email yang sudah ada", "Sistem memvalidasi: 'Email sudah terdaftar'", "", "PASS"],
+        ["USER-N-02", "Admin-Negatif", "Password terlalu pendek", "1. Klik Tambah/Edit\n2. Isi password < 6 karakter", "Pass: '123'", "Sistem memvalidasi: 'Password minimal 6 karakter'", "", "PASS"],
+        ["USER-N-03", "Admin-Negatif", "Data Wajib Kosong", "1. Klik Tambah/Edit\n2. Biarkan Nama/Email/Role kosong", "Field wajib kosong", "Sistem menampilkan validasi wajib diisi", "", "PASS"],
+        [],
+        ["--- ADMIN: KELOLA ALAT ---"],
+        ["ID", "Scenario", "Title", "Steps", "Test Data", "Expected Result", "Actual Result", "Status"],
+        ["ALAT-P-01", "Admin-Positif", "Tambah Alat Valid", "1. Admin klik Tambah Alat\n2. Upload gambar (opsional), isi stok", "Data valid, stok > 0", "Alat tersimpan, gambar terupload di storage", "", "PASS"],
+        ["ALAT-P-02", "Admin-Positif", "Tandai Rusak Valid", "1. Admin Edit Alat\n2. Input stok rusak <= stok baik\n3. Klik Tandai Rusak", "Rusak: 2, Stok: 10", "Stok baik berkurang, stok rusak bertambah", "", "PASS"],
+        ["ALAT-N-01", "Admin-Negatif", "Tandai Rusak > Stok Baik", "1. Admin Edit Alat\n2. Input rusak > stok baik", "Rusak: 20, Stok: 10", "Ditolak dengan pesan kesalahan stok", "", "PASS"],
+        ["ALAT-N-02", "Admin-Negatif", "Hapus Alat Berelasi", "1. Klik Hapus alat yang punya riwayat pinjam", "Alat ID memiliki riwayat", "Ditolak: 'Alat tidak dapat dihapus karena sudah memiliki riwayat peminjaman'", "", "PASS"],
+        [],
+        ["--- NON-FUNGSIONAL (Performance/Security/UI) ---"],
+        ["ID", "Scenario", "Title", "Steps", "Test Data", "Expected Result", "Actual Result", "Status"],
+        ["NF-01", "Performance", "Pencarian Alat", "1. Input keyword pada pencarian di halaman katalog", "Keyword: 'Laptop'", "Sistem memfilter hasil dalam < 2 detik", "", "PASS"],
+        ["NF-02", "Security", "Akses URL Petugas oleh Peminjam", "1. Peminjam akses url /petugas/peminjaman", "URL Petugas", "Sistem menolak (403/Redirect)", "", "PASS"],
+        ["NF-03", "Usability", "Responsif UI", "1. Buka aplikasi pada perangkat mobile/browser sempit", "Mobile View", "Navbar dan tabel tersusun rapi (menggunakan Tailwind CDN)", "", "PASS"]
+      ]
+    }
+  ]
+}

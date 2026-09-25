@@ -51,6 +51,7 @@ class PetugasController extends Controller
             // Kurangi stok alat setelah semua stok dinyatakan cukup
             foreach ($peminjaman->detailPinjam as $detail) {
                 $detail->alat->decrement('stok', $detail->jumlah);
+                $detail->alat->syncStatusKondisi();
             }
 
             // Ubah status menjadi dipinjam
@@ -113,12 +114,34 @@ class PetugasController extends Controller
                 'petugas_id'            =>  auth()->id(),
             ]);
 
-            // Kembalikan stok alat
+            // Kembalikan stok alat berdasarkan nominal rusak per item
             foreach ($peminjaman->detailPinjam as $detail) {
                 $alat = $detail->alat;
-
                 if ($alat) {
-                    $alat->increment('stok', $detail->jumlah);
+                    $jmlRusak = 0;
+
+                    if ($request->kondisi_kembali === 'rusak') {
+                        // Jika ada input spesifik nominal per-item, gunakan itu
+                        if (isset($request->jumlah_rusak[$detail->alat_id]) && $request->jumlah_rusak[$detail->alat_id] !== '') {
+                            $jmlRusak = (int)$request->jumlah_rusak[$detail->alat_id];
+                        } else {
+                            // POIN 1: Tanpa memasukkan nominal spesifik, anggap SELURUH item yang dipinjam rusak
+                            $jmlRusak = $detail->jumlah;
+                        }
+                    }
+                    
+                    // Batasi agar tidak melebihi jumlah yang dipinjam
+                    $jmlRusak = max(0, min($jmlRusak, $detail->jumlah));
+                    $jmlBaik  = $detail->jumlah - $jmlRusak;
+
+                    $alat->increment('stok', $jmlBaik);
+                    $alat->increment('stok_rusak', $jmlRusak);
+                    $alat->syncStatusKondisi();
+
+                    if ($jmlRusak > 0) {
+                        // Notifikasi otomatis ke Admin (alat rusak baru)
+                        \App\Services\NotifikasiService::alatRusakBaru($alat, $jmlRusak);
+                    }
                 }
             }
 

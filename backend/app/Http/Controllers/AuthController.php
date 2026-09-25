@@ -55,6 +55,7 @@ class AuthController extends Controller
 
             LogAktivitas::create([
                 'user_id' => $user->id,
+                'jenis' => 'auth',
                 'aktivitas' => 'Login',
             ]);
 

@@ -92,13 +92,21 @@
 
             {{-- Alat --}}
             <a href="{{ route('admin.alat.index') }}"
-                class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition
+                class="flex items-center justify-between px-4 py-2.5 rounded-lg transition
                 {{ request()->routeIs('admin.alat*')
                     ? 'bg-emerald-600 text-white shadow'
                     : 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
 
-                <i class="bi bi-tools"></i>
-                <span>Kelola Alat</span>
+                <div class="flex items-center gap-3">
+                    <i class="bi bi-tools"></i>
+                    <span>Kelola Alat</span>
+                </div>
+
+                @if(($badges['alat_rusak'] ?? 0) > 0)
+                    <span class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                        {{ $badges['alat_rusak'] }}
+                    </span>
+                @endif
             </a>
 
             <p class="px-4 pt-5 pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
@@ -154,24 +162,40 @@
 
             {{-- Persetujuan --}}
             <a href="{{ route('petugas.peminjaman.index') }}"
-                class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition
+                class="flex items-center justify-between px-4 py-2.5 rounded-lg transition
                 {{ request()->routeIs('petugas.peminjaman*')
                     ? 'bg-emerald-600 text-white shadow'
                     : 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
 
-                <i class="bi bi-check2-square"></i>
-                <span>Persetujuan Peminjaman</span>
+                <div class="flex items-center gap-3">
+                    <i class="bi bi-check2-square"></i>
+                    <span>Persetujuan Peminjaman</span>
+                </div>
+
+                @if(($badges['peminjaman'] ?? 0) > 0)
+                    <span class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                        {{ $badges['peminjaman'] }}
+                    </span>
+                @endif
             </a>
 
             {{-- Pengembalian --}}
             <a href="{{ route('petugas.pengembalian.index') }}"
-                class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition
+                class="flex items-center justify-between px-4 py-2.5 rounded-lg transition
                 {{ request()->routeIs('petugas.pengembalian*')
                     ? 'bg-emerald-600 text-white shadow'
                     : 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
 
-                <i class="bi bi-box-arrow-in-left"></i>
-                <span>Pemantauan Pengembalian</span>
+                <div class="flex items-center gap-3">
+                    <i class="bi bi-box-arrow-in-left"></i>
+                    <span>Pemantauan Pengembalian</span>
+                </div>
+
+                @if(($badges['pengembalian'] ?? 0) > 0)
+                    <span class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                        {{ $badges['pengembalian'] }}
+                    </span>
+                @endif
             </a>
 
             {{-- Laporan --}}
@@ -233,6 +257,81 @@
         {{-- Informasi User + Logout --}}
         <div class="flex items-center gap-4">
 
+            {{-- Lonceng Notifikasi --}}
+            <div class="relative" id="notificationWrapper">
+
+                <button
+                    type="button"
+                    id="notificationButton"
+                    class="relative text-gray-600 hover:text-emerald-600
+                        transition w-9 h-9 flex items-center justify-center">
+
+                    <i class="bi bi-bell text-lg"></i>
+
+                    @if(($jumlahNotifikasi ?? 0) > 0)
+                        <span
+                            id="notificationBadge"
+                            class="absolute -top-1 -right-1
+                                flex h-4 w-4 items-center justify-center
+                                rounded-full bg-red-500
+                                text-[10px] font-bold text-white">
+
+                            {{ $jumlahNotifikasi }}
+
+                        </span>
+                    @endif
+
+                </button>
+
+
+                {{-- DROPDOWN NOTIFIKASI --}}
+                <div
+                    id="notificationDropdown"
+                    class="hidden absolute right-0 top-12
+                        w-80 bg-white
+                        border border-gray-200
+                        rounded-xl shadow-xl
+                        z-50 overflow-hidden">
+
+                    {{-- Header --}}
+                    <div
+                        class="flex items-center justify-between
+                            px-4 py-3
+                            border-b border-gray-200">
+
+                        <h3 class="text-sm font-semibold text-gray-800">
+                            Notifikasi
+                        </h3>
+
+                        <button
+                            type="button"
+                            id="markAllReadButton"
+                            class="text-xs text-emerald-600 hover:text-emerald-700">
+
+                            Tandai semua
+
+                        </button>
+
+                    </div>
+
+
+                    {{-- Isi notifikasi --}}
+                    <div
+                        id="notificationList"
+                        class="max-h-96 overflow-y-auto">
+
+                        <div class="px-4 py-8 text-center text-sm text-gray-400">
+
+                            Memuat notifikasi...
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
             {{-- User --}}
             <div class="flex items-center gap-3">
 
@@ -280,6 +379,272 @@
         @yield('content')
     </main>
 </div>
+
+<script>
+
+    document.addEventListener('DOMContentLoaded', function () {
+
+        const notificationButton =
+            document.getElementById('notificationButton');
+
+        const notificationDropdown =
+            document.getElementById('notificationDropdown');
+
+        const notificationList =
+            document.getElementById('notificationList');
+
+        const markAllReadButton =
+            document.getElementById('markAllReadButton');
+
+
+        if (!notificationButton || !notificationDropdown) {
+            return;
+        }
+
+        if (markAllReadButton) {
+
+            markAllReadButton.addEventListener('click', async function () {
+
+                try {
+
+                    const response = await fetch(
+                        "{{ route('notifikasi.bacaSemua') }}",
+                        {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json'
+                            }
+                        }
+                    );
+
+                    if (!response.ok) {
+                        throw new Error('Gagal menandai semua notifikasi.');
+                    }
+
+                    // Setelah semua dibaca
+                    loadNotifications();
+
+                    // Hilangkan badge lonceng
+                    const badge =
+                        document.getElementById('notificationBadge');
+
+                    if (badge) {
+                        badge.remove();
+                    }
+
+                } catch (error) {
+
+                    console.error(error);
+
+                }
+
+            });
+
+        }
+
+
+        // ==========================================
+        // BUKA / TUTUP DROPDOWN
+        // ==========================================
+
+        notificationButton.addEventListener('click', function (event) {
+
+            event.stopPropagation();
+
+            notificationDropdown.classList.toggle('hidden');
+
+            // Jika dropdown dibuka, ambil notifikasi
+            if (!notificationDropdown.classList.contains('hidden')) {
+                loadNotifications();
+            }
+
+        });
+
+
+        // ==========================================
+        // KLIK DI LUAR DROPDOWN
+        // ==========================================
+
+        document.addEventListener('click', function (event) {
+
+            const wrapper =
+                document.getElementById('notificationWrapper');
+
+            if (!wrapper.contains(event.target)) {
+
+                notificationDropdown.classList.add('hidden');
+
+            }
+
+        });
+
+
+        // ==========================================
+        // AMBIL DATA NOTIFIKASI
+        // ==========================================
+
+        async function loadNotifications() {
+
+            notificationList.innerHTML = `
+                <div class="px-4 py-8 text-center text-sm text-gray-400">
+                    Memuat notifikasi...
+                </div>
+            `;
+
+
+            try {
+
+                const response = await fetch(
+                    "{{ route('notifikasi.index') }}",
+                    {
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    }
+                );
+
+
+                if (!response.ok) {
+                    throw new Error('Gagal mengambil notifikasi.');
+                }
+
+
+                const result = await response.json();
+
+                renderNotifications(result.data || []);
+
+
+            } catch (error) {
+
+                console.error(error);
+
+                notificationList.innerHTML = `
+                    <div class="px-4 py-8 text-center text-sm text-red-500">
+                        Gagal memuat notifikasi.
+                    </div>
+                `;
+
+            }
+
+        }
+
+
+        // ==========================================
+        // TAMPILKAN NOTIFIKASI
+        // ==========================================
+
+        function renderNotifications(notifications) {
+
+            if (notifications.length === 0) {
+
+                notificationList.innerHTML = `
+                    <div class="px-4 py-8 text-center text-sm text-gray-400">
+
+                        <i class="bi bi-bell-slash text-xl block mb-2"></i>
+
+                        Tidak ada notifikasi.
+
+                    </div>
+                `;
+
+                return;
+            }
+
+
+            notificationList.innerHTML = notifications.map(notification => `
+
+                <form method="POST" action="{{ route('notifikasi.dibaca', '__ID__') }}".replace('__ID__', notification.id)>
+                    @csrf
+                </form>
+
+                <a
+                    href="#"
+                    data-notif-id="${notification.id}"
+                    class="notif-link block px-4 py-3
+                        border-b border-gray-100
+                        hover:bg-gray-50
+                        transition
+                        ${notification.dibaca ? '' : 'bg-emerald-50'}">
+
+                    <div class="flex gap-3">
+
+                        <div
+                            class="w-8 h-8 shrink-0
+                                rounded-full
+                                bg-emerald-100
+                                flex items-center justify-center">
+
+                            <i class="bi bi-bell text-emerald-600"></i>
+
+                        </div>
+
+
+                        <div class="min-w-0 flex-1">
+
+                            <p class="text-sm font-semibold text-gray-800">
+                                ${escapeHtml(notification.judul)}
+                            </p>
+
+                            <p class="text-xs text-gray-500 mt-1">
+                                ${escapeHtml(notification.pesan)}
+                            </p>
+
+                            <p class="text-[10px] text-gray-400 mt-1">
+                                ${formatTime(notification.created_at)}
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </a>
+
+            `).join('');
+
+        }
+
+
+        // ==========================================
+        // AMANKAN TEKS DARI DATABASE
+        // ==========================================
+
+        function escapeHtml(text) {
+
+            const div = document.createElement('div');
+
+            div.textContent = text ?? '';
+
+            return div.innerHTML;
+
+        }
+
+
+        // ==========================================
+        // FORMAT WAKTU
+        // ==========================================
+
+        function formatTime(dateString) {
+
+            if (!dateString) {
+                return '';
+            }
+
+            const date = new Date(dateString);
+
+            return date.toLocaleString('id-ID', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+        }
+
+    });
+
+</script>
     
 </body>
 </html>

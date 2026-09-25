@@ -19,6 +19,7 @@ class AlatObserver
 
         LogAktivitas::create([
             'user_id' => Auth::id(),
+            'jenis' => 'alat',
             'aktivitas' => "Menambahkan alat '{$alat->nama_alat}' dengan stok {$alat->stok}.",
         ]);
     }
@@ -42,8 +43,8 @@ class AlatObserver
             $perubahan[] = "stok menjadi {$alat->stok}";
         }
 
-        if ($alat->isDirty('status_kondisi')) {
-            $perubahan[] = "kondisi menjadi '{$alat->status_kondisi}'";
+        if ($alat->isDirty('stok_rusak')) {
+            $perubahan[] = "stok rusak menjadi {$alat->stok_rusak}";
         }
 
         if ($alat->isDirty('deskripsi')) {
@@ -60,6 +61,7 @@ class AlatObserver
 
         LogAktivitas::create([
             'user_id' => Auth::id(),
+            'jenis' => 'alat',
             'aktivitas' => "Mengubah alat '{$alat->nama_alat}': " . implode(', ', $perubahan) . ".",
         ]);
     }
@@ -75,6 +77,7 @@ class AlatObserver
 
         LogAktivitas::create([
             'user_id' => Auth::id(),
+            'jenis' => 'alat',
             'aktivitas' => "Menghapus alat '{$alat->nama_alat}'.",
         ]);
     }

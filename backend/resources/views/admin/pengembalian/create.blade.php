@@ -71,8 +71,14 @@
     </div>
 </div>
 
-{{-- Daftar Alat --}}
-<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+<form
+    action="{{ route('admin.pengembalian.store', $peminjaman->id) }}"
+    method="POST"
+>
+    @csrf
+
+    {{-- Daftar Alat --}}
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
     <h2 class="text-lg font-semibold text-gray-800 mb-4">
         Alat yang Dipinjam
     </h2>
@@ -81,23 +87,26 @@
         <table class="w-full text-sm">
             <thead>
                 <tr class="border-b border-gray-200 text-left">
-                    <th class="py-3 pr-4 font-semibold text-gray-600">
-                        Alat
-                    </th>
-                    <th class="py-3 font-semibold text-gray-600">
-                        Jumlah
-                    </th>
+                    <th class="py-3 pr-4 font-semibold text-gray-600">Alat</th>
+                    <th class="py-3 pr-4 font-semibold text-gray-600">Jumlah</th>
+                    <th class="py-3 font-semibold text-gray-600 text-center kol-rusak hidden">Jumlah Rusak</th>
                 </tr>
             </thead>
 
             <tbody>
                 @foreach ($peminjaman->detailPinjam as $detail)
                     <tr class="border-b border-gray-100">
-                        <td class="py-3 pr-4 text-gray-800">
-                            {{ $detail->alat->nama_alat }}
-                        </td>
-                        <td class="py-3 text-gray-800">
-                            {{ $detail->jumlah }}
+                        <td class="py-3 pr-4 text-gray-800">{{ $detail->alat->nama_alat }}</td>
+                        <td class="py-3 pr-4 text-gray-800">{{ $detail->jumlah }}</td>
+                        <td class="py-3 text-center kol-rusak hidden">
+                            <input
+                                type="number"
+                                name="jumlah_rusak[{{ $detail->alat_id }}]"
+                                min="0"
+                                max="{{ $detail->jumlah }}"
+                                class="w-24 border border-gray-300 rounded px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500"
+                                placeholder="0"
+                            >
                         </td>
                     </tr>
                 @endforeach
@@ -112,12 +121,6 @@
     <h2 class="text-lg font-semibold text-gray-800 mb-6">
         Data Pengembalian
     </h2>
-
-    <form
-        action="{{ route('admin.pengembalian.store', $peminjaman->id) }}"
-        method="POST"
-    >
-        @csrf
 
         {{-- Tanggal Kembali --}}
         <div class="mb-5">
@@ -241,19 +244,22 @@
 <script>
     const kondisiKembali = document.getElementById('kondisi_kembali');
     const dendaKerusakan = document.getElementById('denda_kerusakan');
+    const kolRusak = document.querySelectorAll('.kol-rusak');
 
-    function updateDendaKerusakan() {
+    function updateKondisi() {
         if (kondisiKembali.value === 'rusak') {
             dendaKerusakan.disabled = false;
+            kolRusak.forEach(el => el.classList.remove('hidden'));
         } else {
             dendaKerusakan.disabled = true;
             dendaKerusakan.value = 0;
+            kolRusak.forEach(el => el.classList.add('hidden'));
         }
     }
 
-    kondisiKembali.addEventListener('change', updateDendaKerusakan);
+    kondisiKembali.addEventListener('change', updateKondisi);
 
-    updateDendaKerusakan();
+    updateKondisi();
 </script>
 
 @endsection

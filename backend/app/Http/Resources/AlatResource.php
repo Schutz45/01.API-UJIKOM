@@ -18,6 +18,7 @@ class AlatResource extends JsonResource
             'id'                =>  $this->id,
             'nama_alat'         =>  $this->nama_alat,
             'stok'              =>  $this->stok,
+            'stok_rusak'        =>  $this->stok_rusak,
             'status_kondisi'    =>  $this->status_kondisi,
             'deskripsi'         =>  $this->deskripsi,
             'gambar'            =>  $this->gambar ? url('storage/'  .   $this->gambar)  : null,

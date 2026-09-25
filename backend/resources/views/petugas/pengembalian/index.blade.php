@@ -195,7 +195,7 @@
                                                    text-xs font-semibold
                                                    transition shadow-sm"
                                         >
-                                            Proses Pengembalian
+                                            Kembalikan
                                         </a>
 
                                     @endif

@@ -15,7 +15,6 @@ class PeminjamController extends Controller
     {
         $alats  =   Alat::with('kategori')
             ->where('stok', '>', 0)
-            ->where('status_kondisi', 'baik')
             ->get();
 
         return view('peminjam.katalog', compact('alats'));
@@ -49,11 +48,6 @@ class PeminjamController extends Controller
                     // Cari alat
                     $alat = Alat::findOrFail($alatId);
 
-                    // Pastikan alat masih dalam kondisi baik
-                    if (strtolower(trim($alat->status_kondisi)) !== 'baik') {
-                        throw new \Exception("Alat {$alat->nama_alat} sedang tidak dapat dipinjam.");
-                    }
-
                     // Pastikan stok cukup
                     if ($jumlah > $alat->stok) {
                         throw new \Exception("Jumlah {$alat->nama_alat} yang diminta melebihi stok tersedia.");
@@ -80,6 +74,9 @@ class PeminjamController extends Controller
             }
 
             DB::commit();
+
+            // Kirim notifikasi ke Peminjam bahwa pengajuan telah diterima
+            \App\Services\NotifikasiService::pengajuanDiajukan($peminjaman);
 
             return redirect()->route('peminjam.riwayat')->with('success', 'Pengajuan peminjaman berhasil dikirim.');
         } catch (\Exception $e) {
@@ -128,6 +125,9 @@ class PeminjamController extends Controller
             // Tandai bahwa peminjam meminta pengembalian
             $peminjaman->permintaan_pengembalian = true;
             $peminjaman->save();
+
+            // TAHAP 2: Notifikasi otomatis ke Petugas untuk pemeriksaan pengembalian
+            \App\Services\NotifikasiService::permintaanPengembalian($peminjaman);
 
             return redirect()
                 ->back()

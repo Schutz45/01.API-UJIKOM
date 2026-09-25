@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\Pengembalian;
 use App\Models\LogAktivitas;
+use App\Services\NotifikasiService;
 use Illuminate\Support\Facades\Auth;
 
 class PengembalianObserver
@@ -13,6 +14,7 @@ class PengembalianObserver
         if (Auth::check()) {
             LogAktivitas::create([
                 'user_id'       =>  Auth::id(),
+                'jenis'         =>  'pengembalian',
                 'aktivitas'     =>  $pesan,
             ]);
         }
@@ -24,6 +26,9 @@ class PengembalianObserver
     public function created(Pengembalian $pengembalian): void
     {
         $this->catalog("Memproses pengembalian alat untuk Peminjaman ID: #{$pengembalian->peminjaman_id}");
+
+        // TAHAP 2: Notifikasi otomatis ke Peminjam bahwa pengembalian selesai
+        NotifikasiService::pengembalianSelesai($pengembalian);
     }
 
     /**

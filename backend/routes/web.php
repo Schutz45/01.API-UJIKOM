@@ -5,6 +5,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\PetugasController;
 use App\Http\Controllers\PeminjamController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\NotifikasiController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -15,12 +16,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
 
     // CRUD Alat
-    Route::get('/alat',             [AdminController::class, 'indexAlat'])          ->name('alat.index');
-    Route::get('/alat/create',      [AdminController::class, 'createAlat'])      ->name('alat.create');
-    Route::post('/alat',            [AdminController::class, 'storeAlat'])          ->name('alat.store');
-    Route::get('/alat/{id}/edit',   [AdminController::class, 'editAlat'])     ->name('alat.edit');
-    Route::put('/alat/{id}',        [AdminController::class, 'updateAlat'])        ->name('alat.update');
-    Route::delete('/alat/{id}',     [AdminController::class, 'destroyAlat'])    ->name('alat.destroy');
+    Route::get('/alat',                     [AdminController::class, 'indexAlat'])      ->name('alat.index');
+    Route::get('/alat/create',              [AdminController::class, 'createAlat'])     ->name('alat.create');
+    Route::post('/alat',                    [AdminController::class, 'storeAlat'])      ->name('alat.store');
+    Route::get('/alat/{id}/edit',           [AdminController::class, 'editAlat'])       ->name('alat.edit');
+    Route::put('/alat/{id}',                [AdminController::class, 'updateAlat'])     ->name('alat.update');
+    Route::delete('/alat/{id}',             [AdminController::class, 'destroyAlat'])    ->name('alat.destroy');
+    Route::post('/alat/{alat}/tandai-rusak', [AdminController::class, 'tandaiRusakAlat'])->name('alat.tandai-rusak');
+    Route::post('/alat/{alat}/perbaiki',    [AdminController::class, 'perbaikiAlat'])   ->name('alat.perbaiki');
 
     // CRUD User
     Route::get('/users',            [AdminController::class, 'indexUser'])      ->name('user.index');
@@ -92,3 +95,21 @@ Route::middleware('guest')->group(function () {
 
 // Route Logout (Harus sudah login)
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
+
+/*
+|----------------------------------------------------------------------
+| Notifikasi & Badge (semua role yang sudah login)
+|----------------------------------------------------------------------
+*/
+Route::middleware(['auth'])->group(function () {
+    // TAHAP 3: Lonceng
+    Route::get('/notifikasi',                       [NotifikasiController::class, 'index'])             ->name('notifikasi.index');
+    Route::post('/notifikasi/{notifikasi}/dibaca',  [NotifikasiController::class, 'tandaiDibaca'])      ->name('notifikasi.dibaca');
+    Route::post('/notifikasi/{notifikasi}/baca',    [NotifikasiController::class, 'tandaiDibaca'])      ->name('notifikasi.baca');
+    Route::post('/notifikasi/baca-semua',           [NotifikasiController::class, 'tandaiSemuaDibaca']) ->name('notifikasi.bacaSemua');
+
+    Route::post('/notifikasi/baca-semua',           [NotifikasiController::class, 'tandaiSemuaDibaca']) ->name('notifikasi.bacaSemua');
+
+    // TAHAP 4: Badge fitur
+    Route::get('/badges', [NotifikasiController::class, 'badges'])->name('badges');
+});
