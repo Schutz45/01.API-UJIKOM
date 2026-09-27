@@ -105,10 +105,8 @@ Route::middleware(['auth'])->group(function () {
     // TAHAP 3: Lonceng
     Route::get('/notifikasi',                       [NotifikasiController::class, 'index'])             ->name('notifikasi.index');
     Route::post('/notifikasi/{notifikasi}/dibaca',  [NotifikasiController::class, 'tandaiDibaca'])      ->name('notifikasi.dibaca');
-    Route::post('/notifikasi/{notifikasi}/baca',    [NotifikasiController::class, 'tandaiDibaca'])      ->name('notifikasi.baca');
     Route::post('/notifikasi/baca-semua',           [NotifikasiController::class, 'tandaiSemuaDibaca']) ->name('notifikasi.bacaSemua');
 
-    Route::post('/notifikasi/baca-semua',           [NotifikasiController::class, 'tandaiSemuaDibaca']) ->name('notifikasi.bacaSemua');
 
     // TAHAP 4: Badge fitur
     Route::get('/badges', [NotifikasiController::class, 'badges'])->name('badges');

@@ -553,15 +553,14 @@
 
 
             notificationList.innerHTML = notifications.map(notification => `
-
-                <form method="POST" action="{{ route('notifikasi.dibaca', '__ID__') }}".replace('__ID__', notification.id)>
-                    @csrf
-                </form>
-
-                <a
-                    href="#"
-                    data-notif-id="${notification.id}"
-                    class="notif-link block px-4 py-3
+                <div class="relative">
+                    <form id="form-notif-${notification.id}" method="POST" action="{{ url('/notifikasi') }}/${notification.id}/dibaca" class="hidden">
+                        @csrf
+                    </form>
+                    <a
+                        href="javascript:void(0)"
+                        onclick="event.preventDefault(); document.getElementById('form-notif-${notification.id}').submit();"
+                        class="notif-link block px-4 py-3
                         border-b border-gray-100
                         hover:bg-gray-50
                         transition
@@ -599,7 +598,7 @@
                     </div>
 
                 </a>
-
+                </div>
             `).join('');
 
         }
