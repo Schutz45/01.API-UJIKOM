@@ -32,11 +32,11 @@ class PetugasController extends Controller
     {
         DB::beginTransaction();
         try {
-            $peminjaman =   Peminjaman::with('detailPinjam.alat')->findOrFail($id);
+            $peminjaman =   Peminjaman::with('detailPinjam.alat')->lockForUpdate()->findOrFail($id);
 
-            // Pastikan hanya pengajuan yang bisa disetujui
-            if ($peminjaman->status !== 'diajukan') {
-                return redirect()->back()->with('error', 'Peminjaman sudah diproses.');
+            // Pastikan hanya pengajuan yang bisa disetujui (guard transisi eksplisit)
+            if (!$peminjaman->canTransitionTo('dipinjam')) {
+                return redirect()->back()->with('error', "Peminjaman ini berstatus '{$peminjaman->status}' dan tidak dapat disetujui.");
             }
 
             // Cek stok semua alat terlebih dahulu
@@ -75,11 +75,11 @@ class PetugasController extends Controller
         DB::beginTransaction();
 
         try {
-            $peminjaman = Peminjaman::with('detailPinjam.alat')->findOrFail($peminjamanId);
+            $peminjaman = Peminjaman::with('detailPinjam.alat')->lockForUpdate()->findOrFail($peminjamanId);
 
-            // Pastikan peminjaman masih aktif
-            if (!in_array($peminjaman->status, ['dipinjam', 'telat'])) {
-                throw new \Exception('Peminjaman ini sudah tidak dapat diproses untuk pengembalian.');
+            // Pastikan peminjaman masih aktif dan bisa diproses (guard transisi eksplisit)
+            if (!$peminjaman->canTransitionTo('dikembalikan')) {
+                throw new \Exception("Peminjaman ini berstatus '{$peminjaman->status}' dan tidak dapat diproses untuk pengembalian.");
             }
 
             // Tanggal Pengembalian menggunakan tanggal server
@@ -116,6 +116,11 @@ class PetugasController extends Controller
 
             // Kembalikan stok alat berdasarkan nominal rusak per item
             foreach ($peminjaman->detailPinjam as $detail) {
+                // Guard Kasus B: Nilai detail tidak boleh negatif atau nol
+                if ($detail->jumlah <= 0) {
+                    throw new \Exception("Integritas data terganggu: jumlah pinjam untuk alat ID #{$detail->alat_id} bernilai tidak valid ({$detail->jumlah}).");
+                }
+
                 $alat = $detail->alat;
                 if ($alat) {
                     $jmlRusak = 0;
@@ -123,19 +128,33 @@ class PetugasController extends Controller
                     if ($request->kondisi_kembali === 'rusak') {
                         // Jika ada input spesifik nominal per-item, gunakan itu
                         if (isset($request->jumlah_rusak[$detail->alat_id]) && $request->jumlah_rusak[$detail->alat_id] !== '') {
-                            $jmlRusak = (int)$request->jumlah_rusak[$detail->alat_id];
+                            $inputRusak = (int)$request->jumlah_rusak[$detail->alat_id];
+                            // Guard Kasus A: Nilai negatif dari input ditolak secara tegas
+                            if ($inputRusak < 0) {
+                                throw new \Exception("Jumlah rusak untuk alat '{$alat->nama_alat}' tidak boleh bernilai negatif.");
+                            }
+                            $jmlRusak = $inputRusak;
                         } else {
                             // POIN 1: Tanpa memasukkan nominal spesifik, anggap SELURUH item yang dipinjam rusak
                             $jmlRusak = $detail->jumlah;
                         }
                     }
                     
-                    // Batasi agar tidak melebihi jumlah yang dipinjam
+                    // Stock Guard Eksplisit: Pastikan batas aman secara matematis
                     $jmlRusak = max(0, min($jmlRusak, $detail->jumlah));
-                    $jmlBaik  = $detail->jumlah - $jmlRusak;
+                    $jmlBaik  = max(0, $detail->jumlah - $jmlRusak);
 
-                    $alat->increment('stok', $jmlBaik);
-                    $alat->increment('stok_rusak', $jmlRusak);
+                    // Verifikasi konservasi kuantitas
+                    if (($jmlBaik + $jmlRusak) !== $detail->jumlah) {
+                        throw new \Exception("Perhitungan stok gagal: total unit kembali tidak sesuai dengan unit pinjam.");
+                    }
+
+                    if ($jmlBaik > 0) {
+                        $alat->increment('stok', $jmlBaik);
+                    }
+                    if ($jmlRusak > 0) {
+                        $alat->increment('stok_rusak', $jmlRusak);
+                    }
                     $alat->syncStatusKondisi();
 
                     if ($jmlRusak > 0) {
@@ -214,10 +233,19 @@ class PetugasController extends Controller
         return view('petugas.pengembalian.create', compact('peminjaman'));
     }
 
-    public function indexLaporan()
+    public function indexLaporan(Request $request)
     {
-        $dari   = request()->input('dari');
-        $sampai = request()->input('sampai');
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'dari'      => ['nullable', 'date', 'date_format:Y-m-d'],
+            'sampai'    => ['nullable', 'date', 'date_format:Y-m-d', 'after_or_equal:dari'],
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()->withErrors($validator)->withInput()->with('error', 'Filter tanggal tidak valid.');
+        }
+
+        $dari   = $request->input('dari');
+        $sampai = $request->input('sampai');
 
         // data laporan peminjaman
         $peminjamans = Peminjaman::with(['user', 'detailPinjam.alat'])

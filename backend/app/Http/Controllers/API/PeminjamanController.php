@@ -165,30 +165,40 @@ class PeminjamanController extends Controller
 
     public function approve(Peminjaman $peminjaman): JsonResponse
     {
-        if ($peminjaman->status !== 'diajukan') {
+        // Guard transisi eksplisit & pencegahan eksekusi berulang
+        if (!$peminjaman->canTransitionTo('dipinjam')) {
             return response()->json([
-                'message' => "Persetujuan gagal. Status saat ini: '{$peminjaman->status}'."
-            ], 400);
+                'message' => "Transisi status tidak valid. Status saat ini: '{$peminjaman->status}' tidak dapat diubah menjadi 'dipinjam'."
+            ], 422);
         }
 
         try {
             DB::transaction(function () use ($peminjaman) {
+                // Kunci baris peminjaman agar aman dari concurrency/race conditions
+                $peminjaman = Peminjaman::lockForUpdate()->find($peminjaman->id);
+
+                // Verifikasi ulang setelah lock didapatkan
+                if (!$peminjaman->canTransitionTo('dipinjam')) {
+                    throw new Exception("Status peminjaman telah berubah.");
+                }
+
                 $peminjaman->update(['status' => 'dipinjam']);
 
                 foreach ($peminjaman->detailPinjam as $detail) {
                     // Mengunci baris alat demi validasi final sebelum stok dikurangi
                     $alat = Alat::lockForUpdate()->findOrFail($detail->alat_id);
                     if ($alat->stok < $detail->jumlah) {
-                        throw new Exception("Persetujuan gagal. Stok alat '{$alat->nama_alat}' mendadak tidak mencukupi.");
+                        throw new Exception("Persetujuan gagal. Stok alat '{$alat->nama_alat}' tidak mencukupi.");
                     }
 
                     $alat->decrement('stok', $detail->jumlah);
+                    $alat->syncStatusKondisi();
                 }
             });
 
             return response()->json([
                 'message'   =>  'Peminjaman disetujui. Stok alat telah otomatis dikurangi.',
-                'data'      =>   new PeminjamanResource($peminjaman->load(['user', 'detailpinjam.alat']))
+                'data'      =>   new PeminjamanResource($peminjaman->load(['user', 'detailPinjam.alat']))
             ]);
         } catch (Exception $e) {
             return response()->json(['message'  =>  $e->getMessage()], 422);

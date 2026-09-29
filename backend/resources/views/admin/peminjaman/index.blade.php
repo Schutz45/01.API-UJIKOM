@@ -35,34 +35,6 @@
                         method="GET"
                         class="flex flex-col sm:flex-row sm:flex-wrap gap-2 w-full xl:w-auto">
 
-                        {{-- Filter Status --}}
-                        <select name="status"
-                            class="w-full sm:w-auto px-3 py-2 text-sm border border-gray-300 rounded-lg
-                            bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-
-                            <option value="">Semua Status</option>
-
-                            <option value="diajukan"
-                                {{ request('status') == 'diajukan' ? 'selected' : '' }}>
-                                Diajukan
-                            </option>
-
-                            <option value="dipinjam"
-                                {{ request('status') == 'dipinjam' ? 'selected' : '' }}>
-                                Dipinjam
-                            </option>
-
-                            <option value="dikembalikan"
-                                {{ request('status') == 'dikembalikan' ? 'selected' : '' }}>
-                                Dikembalikan
-                            </option>
-
-                            <option value="telat"
-                                {{ request('status') == 'telat' ? 'selected' : '' }}>
-                                Telat
-                            </option>
-                        </select>
-
                         {{-- Filter Urutan --}}
                         <select name="sort"
                             class="w-full sm:w-auto px-3 py-2 text-sm border border-gray-300 rounded-lg
@@ -183,15 +155,23 @@
                                     @endif
 
                                     <!-- Form Ubah Status Cepat -->
-                                    <form action="{{ route('admin.peminjaman.updateStatus', $peminjaman->id) }}" method="POST" class="flex items-center">
-                                        @csrf 
-                                        @method('PUT')
-                                        <select name="status" onchange="this.form.submit()" class="w-full text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none">
-                                            <option value="diajukan"        {{ $peminjaman->status == 'diajukan' ? 'selected' : '' }}   >Diajukan</option>
-                                            <option value="dipinjam"        {{ $peminjaman->status == 'dipinjam' ? 'selected' : '' }}   >Dipinjam</option>
-                                            <option value="telat"           {{ $peminjaman->status == 'telat' ? 'selected' : '' }}      >Telat</option>
-                                        </select>
-                                    </form>
+                                    @if($peminjaman->status !== 'dikembalikan')
+                                        <form action="{{ route('admin.peminjaman.updateStatus', $peminjaman->id) }}" method="POST" class="flex items-center">
+                                            @csrf 
+                                            @method('PUT')
+                                            <select name="status" onchange="this.form.submit()" class="w-full text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none">
+                                                @if($peminjaman->status === 'diajukan')
+                                                    <option value="diajukan" selected disabled>Diajukan</option>
+                                                    <option value="dipinjam">Dipinjam</option>
+                                                @elseif($peminjaman->status === 'dipinjam')
+                                                    <option value="dipinjam" selected disabled>Dipinjam</option>
+                                                    <option value="telat">Telat</option>
+                                                @elseif($peminjaman->status === 'telat')
+                                                    <option value="telat" selected disabled>Telat</option>
+                                                @endif
+                                            </select>
+                                        </form>
+                                    @endif
 
                                     <!-- Tombol Hapus -->
                                     <form action="{{ route('admin.peminjaman.destroy', $peminjaman->id) }}" method="POST"

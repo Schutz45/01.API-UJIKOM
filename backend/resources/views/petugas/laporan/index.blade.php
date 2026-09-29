@@ -3,10 +3,64 @@
 @section('title', 'Laporan - Dashboard Petugas')
 @section('header-title', 'Laporan Peminjaman & Pengembalian')
 
+@push('styles')
+<style>
+    @media print {
+        /* Sembunyikan elemen UI yang tidak perlu dicetak */
+        nav, aside, header, .sidebar, .navbar, 
+        .no-print, #notificationDropdown, #userDropdown,
+        form, .filter-section, .alert, button, a.btn, 
+        .tombol-cetak-container {
+            display: none !important;
+        }
+
+        /* Reset padding/margin untuk area cetak */
+        body, .content-wrapper, main {
+            background: white !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .bg-white {
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        /* Pastikan tabel terlihat bagus saat dicetak */
+        table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+        }
+        th, td {
+            border: 1px solid #e2e8f0 !important;
+            padding: 8px !important;
+            font-size: 10pt !important;
+        }
+        
+        /* Tampilkan judul laporan khusus cetak jika perlu */
+        .print-only {
+            display: block !important;
+        }
+    }
+    .print-only { display: none; }
+</style>
+@endpush
+
 @section('content')
 
+    {{-- JUDUL CETAK (Hanya Muncul saat Print) --}}
+    <div class="print-only mb-6 text-center">
+        <h1 class="text-2xl font-bold uppercase tracking-widest">SIPPSD</h1>
+        <h2 class="text-lg font-semibold">Laporan Peminjaman & Pengembalian Alat</h2>
+        <p class="text-sm text-gray-600 mt-1">
+            Periode: {{ $dari ? date('d/m/Y', strtotime($dari)) : 'Semua' }} 
+            s/d {{ $sampai ? date('d/m/Y', strtotime($sampai)) : 'Semua' }}
+        </p>
+        <hr class="mt-4 border-gray-300">
+    </div>
+
     {{-- FILTER LAPORAN --}}
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6 p-4 sm:p-5">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6 p-4 sm:p-5 no-print filter-section">
 
         <h3 class="text-lg font-bold text-gray-800">
             Filter Laporan
@@ -19,7 +73,7 @@
 
         <form action="{{ route('petugas.laporan.index') }}" method="GET">
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
 
                 {{-- Dari Tanggal --}}
                 <div>
@@ -54,11 +108,11 @@
 
 
                 {{-- Tombol --}}
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full">
+                <div class="flex flex-col sm:flex-row sm:justify-end gap-2 w-full md:col-span-2 tombol-cetak-container">
 
                     <button
                         type="submit"
-                        class="w-full bg-emerald-600 hover:bg-emerald-700
+                        class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700
                             text-white px-4 py-2 rounded-lg
                             text-sm font-semibold transition
                             whitespace-nowrap">
@@ -67,25 +121,22 @@
 
                     <a
                         href="{{ route('petugas.laporan.index') }}"
-                        class="w-full bg-gray-200 hover:bg-gray-300
+                        class="w-full sm:w-auto bg-gray-200 hover:bg-gray-300
                             text-gray-700 px-4 py-2 rounded-lg
                             text-sm font-semibold transition
                             text-center whitespace-nowrap">
                         Reset
                     </a>
 
-                    <a
-                        href="{{ route('petugas.laporan.cetak', [
-                            'dari' => $dari,
-                            'sampai' => $sampai
-                        ]) }}"
-                        target="_blank"
-                        class="w-full bg-blue-600 hover:bg-blue-700
+                    <button
+                        type="button"
+                        onclick="window.print()"
+                        class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700
                             text-white px-4 py-2 rounded-lg
                             text-sm font-semibold transition
                             text-center whitespace-nowrap">
                         Cetak Laporan
-                    </a>
+                    </button>
 
                 </div>
 

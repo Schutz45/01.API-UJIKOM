@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Sistem Peminjaman Alat</title>
+    <title>Login - SIPPSD - Sistem Informasi Peminjaman Peralatan Sekolah Digital</title>
+    <link rel="icon" type="image/svg+xml" href="{{ asset('img/favicon.svg') }}">
     <!-- Membuat Tailwind CSS melalui CDN -->
      <script src="https://cdn.tailwindcss.com"></script>
 </head>

@@ -41,52 +41,94 @@ class PengembalianController extends Controller
     {
         try {
             $pengembalian               =   DB::transaction(function ()   use ($request) {
-                // Kunci baris peminjaman ini selama transaksi agar tidak dimanipulasi proses lain
-                $peminjaman             =   Peminjaman::with('detailPinjam')->lockForUpdate()->find($request->peminjaman_id);
+                $peminjaman             =   Peminjaman::with('detailPinjam.alat')->lockForUpdate()->find($request->peminjaman_id);
 
-                // Guarding Pastikan statusnya sedang dipinjam
-                if($peminjaman->status    !== 'dipinjam') {
-                    throw new Exception("Data ditolak. Peminjaman ini berstatus '{$peminjaman->status}', bukan 'dipinjam'.");
+                // Guard transisi eksplisit: hanya dipinjam/telat yang bisa dikembalikan
+                if (!$peminjaman->canTransitionTo('dikembalikan')) {
+                    throw new Exception("Data ditolak. Peminjaman ini berstatus '{$peminjaman->status}', tidak dapat dikembalikan.");
                 }
 
-                // Cek keterlambatan menggunakn Carbon
+                $tglKembali             =   now();
                 $tglKembaliPlan         =   Carbon::parse($peminjaman->tgl_kembali_plan)->startOfDay();
                 $hariIni                =   Carbon::now()->startOfDay();
 
-                // Jika hari ini lebih besar dari tanggal rencana kembali maka telat
-                $statusPeminjamanBaru   =   $hariIni->greaterThan($tglKembaliPlan) ? 'telat'    :   'dikembalikan';
+                // Hitung denda keterlambatan
+                $hariTerlambat          =   $hariIni->greaterThan($tglKembaliPlan) ? $tglKembaliPlan->diffInDays($hariIni) : 0;
+                $dendaKeterlambatan    =   $hariTerlambat * 1000;
+                $dendaKerusakan         =   $request->denda ?? 0;
+                $totalDenda             =   $dendaKeterlambatan + $dendaKerusakan;
 
                 // 1. Insert data ke tabel pengembalian
                 $pengembalian           =   Pengembalian::create([
-                    'peminjaman_id'     =>  $peminjaman->id,
-                    'tgl_kembali'       =>  now()->toDateString(),
-                    'kondisi_kembali'   =>  $request->kondisi_kembali,
-                    'denda'             =>  $request->denda ?? 0, // Default 0 jika null
-                    'petugas_id'        =>  auth()->id(), // Ambil ID user (petugas) yang sedang login
+                    'peminjaman_id'         =>  $peminjaman->id,
+                    'tgl_kembali'           =>  $tglKembali->toDateString(),
+                    'kondisi_kembali'       =>  $request->kondisi_kembali,
+                    'denda_keterlambatan'   =>  $dendaKeterlambatan,
+                    'denda_kerusakan'       =>  $dendaKerusakan,
+                    'denda'                 =>  $totalDenda,
+                    'petugas_id'            =>  auth()->id(),
                 ]);
 
-                // 2. Ubah status di tabel peminjaman utama
-                $peminjaman->update(['status'   =>  $statusPeminjamanBaru]);
-
-                // 3. Kembalikan (tambah) stok alat berdasarkan detail_pinjam dan kondisi
+                // 2. Kembalikan (tambah) stok alat berdasarkan detail_pinjam dan kondisi
                 foreach($peminjaman->detailPinjam as $detail) {
-                    $alat   =   Alat::lockForUpdate()->find($detail->alat_id);
+                    // Guard Kasus B: Data detail yang corrupt/negatif tidak boleh diproses
+                    if ($detail->jumlah <= 0) {
+                        throw new Exception("Integritas data terganggu: jumlah pinjam untuk alat ID #{$detail->alat_id} bernilai tidak valid ({$detail->jumlah}).");
+                    }
+
+                    $alat = $detail->alat;
                     if ($alat) {
+                        $jmlRusak = 0;
                         if ($request->kondisi_kembali === 'rusak') {
-                            $alat->increment('stok_rusak', $detail->jumlah);
-                        } else {
-                            $alat->increment('stok', $detail->jumlah);
+                            if (isset($request->jumlah_rusak[$alat->id])) {
+                                $inputRusak = (int)$request->jumlah_rusak[$alat->id];
+                                // Guard Kasus A: Nilai negatif dari input ditolak secara tegas
+                                if ($inputRusak < 0) {
+                                    throw new Exception("Jumlah unit rusak tidak boleh bernilai negatif.");
+                                }
+                                $jmlRusak = $inputRusak;
+                            } else {
+                                $jmlRusak = $detail->jumlah; // Default: Semua rusak jika kondisi global 'rusak'
+                            }
+                        }
+
+                        // Stock Guard Eksplisit: Pastikan batas aman secara matematis
+                        $jmlRusak = max(0, min($jmlRusak, $detail->jumlah));
+                        $jmlBaik  = max(0, $detail->jumlah - $jmlRusak);
+
+                        // Verifikasi konservasi kuantitas
+                        if (($jmlBaik + $jmlRusak) !== $detail->jumlah) {
+                            throw new Exception("Perhitungan stok gagal: total unit kembali tidak sesuai dengan unit pinjam.");
+                        }
+
+                        if ($jmlBaik > 0) {
+                            $alat->increment('stok', $jmlBaik);
+                        }
+                        if ($jmlRusak > 0) {
+                            $alat->increment('stok_rusak', $jmlRusak);
+                        }
+                        $alat->syncStatusKondisi();
+
+                        // Simpan info kerusakan ke detail_pinjam untuk history
+                        $detail->update(['jumlah_rusak' => $jmlRusak]);
+
+                        if ($jmlRusak > 0) {
+                            \App\Services\NotifikasiService::alatRusakBaru($alat, $jmlRusak);
                         }
                     }
                 }
 
-                // Opsional: Catat ke log aktivitas petugas
-                auth()->user()->logAktivitas()->create([
-                    'jenis'     =>  'pengembalian',
-                    'aktivitas' =>  "Memproses pengembalian ID: #{$peminjaman->id} dengan status akhir: {$statusPeminjamanBaru}."
+                // 3. Ubah status di tabel peminjaman utama
+                $peminjaman->update([
+                    'status' => 'dikembalikan',
+                    'permintaan_pengembalian' => false
                 ]);
 
-                // Load relasi agar response JSON lebih informatif
+                auth()->user()->logAktivitas()->create([
+                    'jenis'     =>  'pengembalian',
+                    'aktivitas' =>  "Memproses pengembalian ID: #{$peminjaman->id}. Denda: Rp" . number_format($totalDenda, 0, ',', '.')
+                ]);
+
                 return $pengembalian->load(['peminjaman.user', 'petugas']);
             });
 
@@ -95,7 +137,6 @@ class PengembalianController extends Controller
                 'data'      =>  $pengembalian
             ], 201);
         } catch (Exception $e) {
-            // Tangkap pesan error dari throw exception di atas (misal status bukan 'dipinjam')
             return response()->json(['message'  =>  $e->getMessage()], 422);
         }
     }
@@ -106,8 +147,6 @@ class PengembalianController extends Controller
     public function show(Pengembalian $pengembalian): JsonResponse
     {
         $user   =   auth()->user();
-
-        // Eager load relasi
         $pengembalian->load(['peminjaman.user', 'peminjaman.detailPinjam.alat', 'petugas']);
 
         // Otorisasi privasi
@@ -126,10 +165,16 @@ class PengembalianController extends Controller
      */
     public function update(UpdatePengembalianRequest $request, Pengembalian $pengembalian): JsonResponse
     {
-        // Mengamankan data dengan membatasi field yang boleh dikoreksi petugas
+        $user = auth()->user();
+        if (!in_array($user->role, ['admin', 'petugas'])) {
+            return response()->json(['message' => 'Hanya Admin/Petugas yang dapat memperbarui data pengembalian.'], 403);
+        }
+
         $pengembalian->update([
             'kondisi_kembali'   =>  $request->kondisi_kembali,
-            'denda'             =>  $request->denda ?? $pengembalian->denda,
+            'denda_kerusakan'   =>  $request->denda ?? $pengembalian->denda_kerusakan,
+            // Re-calculate total denda if needed
+            'denda'             =>  $pengembalian->denda_keterlambatan + ($request->denda ?? $pengembalian->denda_kerusakan)
         ]);
 
         return response()->json([
@@ -143,6 +188,11 @@ class PengembalianController extends Controller
      */
     public function destroy(Pengembalian $pengembalian): JsonResponse
     {
+        $user = auth()->user();
+        if ($user->role !== 'admin') {
+            return response()->json(['message' => 'Hanya Admin yang dapat menghapus riwayat pengembalian.'], 403);
+        }
+
         try {
             DB::transaction(function () use ($pengembalian) {
                 $peminjaman = Peminjaman::with('detailPinjam')->lockForUpdate()->findOrFail($pengembalian->peminjaman_id);
@@ -151,25 +201,21 @@ class PengembalianController extends Controller
                 foreach ($peminjaman->detailPinjam as $detail) {
                     $alat = Alat::lockForUpdate()->findOrFail($detail->alat_id);
                     
-                    if ($pengembalian->kondisi_kembali === 'rusak') {
-                        if ($alat->stok_rusak < $detail->jumlah) {
-                             throw new Exception("Gagal membatalkan pengembalian. Stok rusak '{$alat->nama_alat}' tidak mencukupi.");
-                        }
-                        $alat->decrement('stok_rusak', $detail->jumlah);
-                    } else {
-                        if ($alat->stok < $detail->jumlah) {
-                            throw new Exception("Gagal membatalkan pengembalian. Stok alat '{$alat->nama_alat}' tidak mencukupi.");
-                        }
-                        $alat->decrement('stok', $detail->jumlah);
+                    $jmlRusak = $detail->jumlah_rusak;
+                    $jmlBaik  = $detail->jumlah - $jmlRusak;
+
+                    if ($alat->stok < $jmlBaik || $alat->stok_rusak < $jmlRusak) {
+                         throw new Exception("Gagal membatalkan pengembalian. Stok '{$alat->nama_alat}' tidak konsisten untuk ditarik.");
                     }
+
+                    $alat->decrement('stok', $jmlBaik);
+                    $alat->decrement('stok_rusak', $jmlRusak);
+                    $alat->syncStatusKondisi();
+                    $detail->update(['jumlah_rusak' => 0]);
                 }
 
-                // Kembalikan status peminjaman master menjadi dipinjam kembali
-                $peminjaman->update(['status'   =>  'dipinjam']);
-
-                // Log Aktivitas jika metode/relasi tersedia
-                auth()->user()->logAktivitas()?->create(['jenis' => 'pengembalian', 'aktivitas'    =>  "Membatalkan pengembalian ID: #{$pengembalian->id}"]);
-
+                $peminjaman->update(['status' => 'dipinjam']);
+                auth()->user()->logAktivitas()?->create(['jenis' => 'pengembalian', 'aktivitas' => "Membatalkan pengembalian ID: #{$pengembalian->id}"]);
                 $pengembalian->delete();
             });
 

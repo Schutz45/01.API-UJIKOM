@@ -7,6 +7,8 @@
 
     <title>@yield('title', 'SIPPSD - Sistem Informasi Peminjaman Peralatan Sekolah Digital')</title>
 
+    <link rel="icon" type="image/svg+xml" href="{{ asset('img/favicon.svg') }}">
+
     {{-- Tailwind CSS --}}
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -36,13 +38,8 @@
                 <div class="flex items-center gap-3">
 
                     <div
-                        class="w-10 h-10 rounded-xl
-                               bg-gradient-to-br from-red-500 to-purple-600
-                               flex items-center justify-center
-                               shadow-lg shrink-0">
-
-                        <i class="bi bi-fire text-xl"></i>
-
+                        class="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
+                        <i class="bi bi-tools text-xl"></i>
                     </div>
 
                     <div class="min-w-0">
@@ -52,8 +49,7 @@
                         </h1>
 
                         <p class="text-[9px] leading-tight text-slate-400">
-                            Sistem Informasi Peminjaman
-                            Peralatan Sekolah Digital
+                            Sistem Peminjaman Alat
                         </p>
 
                     </div>
@@ -306,12 +302,8 @@
                     <div class="flex items-center gap-2">
 
                         <div
-                            class="w-9 h-9 rounded-full
-                                   bg-indigo-100
-                                   flex items-center justify-center">
-
+                            class="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center">
                             <i class="bi bi-person-fill text-indigo-600"></i>
-
                         </div>
 
                         <div class="hidden sm:block leading-tight">

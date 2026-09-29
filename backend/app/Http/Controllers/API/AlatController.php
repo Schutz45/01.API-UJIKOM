@@ -92,6 +92,12 @@ class AlatController extends Controller
      */
     public function destroy(Alat $alat): JsonResponse
     {
+        if ($alat->detailPinjam()->exists()) {
+            return response()->json([
+                'message' => 'Alat tidak dapat dihapus karena memiliki riwayat peminjaman.'
+            ], 422);
+        }
+
         DB::transaction(function () use ($alat) {
             if ($alat->gambar) {
                 Storage::disk('public')->delete($alat->gambar);

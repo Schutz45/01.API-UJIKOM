@@ -3,13 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Dashboard Admin')</title>
+    <link rel="icon" type="image/svg+xml" href="{{ asset('img/favicon.svg') }}">
+    <title>@yield('title', 'SIPPSD - Sistem Informasi Peminjaman Peralatan Sekolah Digital')</title>
 <!-- Membuat Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
 
     <link
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    @stack('styles')
 </head>
 <body class="bg-gray-100 font-sans antialiased">
 
@@ -21,7 +24,7 @@
     {{-- JUDUL PANEL --}}
     <div class="px-5 py-5 border-b border-gray-800">
         <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-lg bg-emerald-600 flex items-center justify-center">
+            <div class="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
                 <i class="bi bi-tools text-xl"></i>
             </div>
 
@@ -37,7 +40,7 @@
                 @endif
 
                 <p class="text-xs text-gray-500">
-                    Sistem Peminjaman Alat
+                    SIPPSD - Peminjaman Alat
                 </p>
             </div>
         </div>

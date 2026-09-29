@@ -792,7 +792,7 @@ class AdminController extends Controller
         $peminjaman = Peminjaman::with('detailPinjam.alat')->findOrFail($id);
 
         $request->validate([
-            'status' => 'required|in:diajukan,dipinjam,telat',
+            'status' => 'required|in:diajukan,dipinjam,telat,dikembalikan',
         ]);
 
         DB::beginTransaction();
@@ -801,10 +801,13 @@ class AdminController extends Controller
             $statusLama = $peminjaman->status;
             $statusBaru = $request->status;
 
-            // Jika status berubah menjadi dipinjam,
-            // kurangi stok alat.
-            if ($statusLama != 'dipinjam' && $statusBaru == 'dipinjam') {
+            // Validasi Transisi Status (Tahap 3) - memakai single source of truth di Model
+            if (!$peminjaman->canTransitionTo($statusBaru)) {
+                throw new \Exception("Transisi status dari '{$statusLama}' ke '{$statusBaru}' tidak diizinkan.");
+            }
 
+            // Jika status berubah menjadi dipinjam, kurangi stok (hanya sekali)
+            if ($statusBaru === 'dipinjam') {
                 foreach ($peminjaman->detailPinjam as $detail) {
                     $alat = $detail->alat;
 
@@ -816,6 +819,15 @@ class AdminController extends Controller
 
                     $alat->decrement('stok', $detail->jumlah);
                     $alat->syncStatusKondisi();
+                }
+            }
+
+            // Jika admin memaksa ke dikembalikan tanpa melalui proses pengembalian,
+            // kembalikan stok ke gudang (asumsi kondisi baik) agar stok tidak bocor.
+            if ($statusBaru === 'dikembalikan') {
+                foreach ($peminjaman->detailPinjam as $detail) {
+                    $detail->alat->increment('stok', $detail->jumlah);
+                    $detail->alat->syncStatusKondisi();
                 }
             }
 

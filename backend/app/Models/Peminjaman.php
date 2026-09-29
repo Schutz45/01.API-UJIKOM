@@ -37,4 +37,27 @@ class Peminjaman extends Model
     public function pengembalian(): HasOne {
         return $this->hasOne(Pengembalian::class);
     }
+
+    /**
+     * Guard Aturan Bisnis Transisi Status
+     */
+    public function canTransitionTo(string $targetStatus): bool
+    {
+        $allowedTransitions = [
+            'diajukan'     => ['dipinjam', 'ditolak'],
+            'dipinjam'     => ['telat', 'dikembalikan'],
+            'telat'        => ['dikembalikan'],
+            'dikembalikan' => [], // Status terminal - terkunci permanen
+            'ditolak'      => [], // Status terminal - terkunci permanen
+        ];
+
+        $currentStatus = $this->status;
+
+        // Mencegah perubahan jika status sudah sama (cegah eksekusi ulang)
+        if ($currentStatus === $targetStatus) {
+            return false;
+        }
+
+        return in_array($targetStatus, $allowedTransitions[$currentStatus] ?? [], true);
+    }
 }

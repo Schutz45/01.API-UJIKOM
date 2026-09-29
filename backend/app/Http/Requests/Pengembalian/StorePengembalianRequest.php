@@ -23,19 +23,21 @@ class StorePengembalianRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'peminjaman_id'     =>  ['required',    'integer',  Rule::exists('peminjaman', 'id')
-            ],
-            'kondisi_kembali'   =>  ['required',    'string',   'max:255'],
+            'peminjaman_id'     =>  ['required',    'integer',  Rule::exists('peminjaman', 'id')],
+            'kondisi_kembali'   =>  ['required',    'string',   Rule::in(['baik', 'rusak'])],
             'denda'             =>  ['nullable',    'integer',  'min:0'],
+            'jumlah_rusak'      =>  ['nullable',    'array'],
+            'jumlah_rusak.*'    =>  ['nullable',    'integer',  'min:0'],
         ];
     }
 
-    public function attributes(): array 
+    public function attributes(): array
     {
         return [
             'peminjaman_id'     =>  'ID Peminjaman',
             'kondisi_kembali'   =>  'Kondisi barang kembali',
             'denda'             =>  'Nilai denda',
+            'jumlah_rusak'      =>  'Jumlah unit rusak per alat',
         ];
     }
 }
