@@ -200,20 +200,33 @@
         </div>
 
         {{-- Informasi Denda Keterlambatan --}}
-        <div class="mb-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <div class="flex justify-between items-center">
-                <span class="text-sm text-gray-600">
-                    Tarif keterlambatan
-                </span>
-
-                <span class="font-semibold text-gray-800">
-                    Rp1.000 / hari
-                </span>
+        <div class="mb-6 bg-gray-50 border border-gray-200 rounded-lg p-5 space-y-3">
+            <h3 class="text-sm font-bold text-gray-700 border-b border-gray-200 pb-2 mb-3 flex items-center gap-2">
+                <i class="bi bi-calculator"></i> Rincian Biaya & Denda
+            </h3>
+            
+            <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Keterlambatan</span>
+                <span id="label_hari_telat" class="font-medium text-gray-800">0 hari</span>
             </div>
 
-            <p class="text-xs text-gray-500 mt-2">
-                Denda keterlambatan akan dihitung otomatis berdasarkan
-                tanggal kembali dan tanggal rencana kembali.
+            <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Denda Keterlambatan (Rp1.000 / hari)</span>
+                <span id="label_denda_telat" class="font-medium text-gray-800">Rp0</span>
+            </div>
+
+            <div id="row_denda_rusak" class="flex justify-between text-sm hidden">
+                <span class="text-gray-600">Denda Kerusakan</span>
+                <span id="label_denda_rusak" class="font-medium text-red-600">Rp0</span>
+            </div>
+
+            <div class="pt-2 border-t border-gray-200 flex justify-between items-center">
+                <span class="font-bold text-gray-800 text-base">Total Keseluruhan Denda</span>
+                <span id="label_total_denda" class="text-xl font-bold text-blue-700">Rp0</span>
+            </div>
+
+            <p class="text-[11px] text-gray-500 italic pt-2">
+                * Denda keterlambatan dihitung otomatis dari selisih tanggal kembali dan rencana kembali.
             </p>
         </div>
 
@@ -243,22 +256,67 @@
 
 <script>
     const kondisiKembali = document.getElementById('kondisi_kembali');
-    const dendaKerusakan = document.getElementById('denda_kerusakan');
+    const dendaKerusakanInput = document.getElementById('denda_kerusakan');
     const kolRusak = document.querySelectorAll('.kol-rusak');
+    const tglKembaliInput = document.getElementById('tgl_kembali');
+    
+    // Data dari backend
+    const tglRencanaKembali = new Date("{{ $peminjaman->tgl_kembali_plan?->format('Y-m-d') }}");
+    
+    // Elemen label hasil perhitungan
+    const labelHariTelat = document.getElementById('label_hari_telat');
+    const labelDendaTelat = document.getElementById('label_denda_telat');
+    const rowDendaRusak = document.getElementById('row_denda_rusak');
+    const labelDendaRusak = document.getElementById('label_denda_rusak');
+    const labelTotalDenda = document.getElementById('label_total_denda');
+
+    function formatRupiah(number) {
+        return 'Rp' + number.toLocaleString('id-ID');
+    }
+
+    function calculateDenda() {
+        // 1. Hitung Keterlambatan
+        const tglKembali = new Date(tglKembaliInput.value);
+        let diffTime = tglKembali - tglRencanaKembali;
+        let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        let hariTelat = diffDays > 0 ? diffDays : 0;
+        let dendaTelat = hariTelat * 1000;
+
+        // 2. Hitung Kerusakan
+        let dendaKerusakan = parseInt(dendaKerusakanInput.value) || 0;
+
+        // 3. Update Label
+        labelHariTelat.innerText = `${hariTelat} hari`;
+        labelDendaTelat.innerText = formatRupiah(dendaTelat);
+        
+        if (kondisiKembali.value === 'rusak') {
+            rowDendaRusak.classList.remove('hidden');
+            labelDendaRusak.innerText = formatRupiah(dendaKerusakan);
+        } else {
+            rowDendaRusak.classList.add('hidden');
+            dendaKerusakan = 0; // Reset kalau kondisi baik
+        }
+
+        labelTotalDenda.innerText = formatRupiah(dendaTelat + dendaKerusakan);
+    }
 
     function updateKondisi() {
         if (kondisiKembali.value === 'rusak') {
-            dendaKerusakan.disabled = false;
+            dendaKerusakanInput.disabled = false;
             kolRusak.forEach(el => el.classList.remove('hidden'));
         } else {
-            dendaKerusakan.disabled = true;
-            dendaKerusakan.value = 0;
+            dendaKerusakanInput.disabled = true;
+            dendaKerusakanInput.value = 0;
             kolRusak.forEach(el => el.classList.add('hidden'));
         }
+        calculateDenda();
     }
 
     kondisiKembali.addEventListener('change', updateKondisi);
+    dendaKerusakanInput.addEventListener('input', calculateDenda);
+    tglKembaliInput.addEventListener('change', calculateDenda);
 
+    // Initial run
     updateKondisi();
 </script>
 

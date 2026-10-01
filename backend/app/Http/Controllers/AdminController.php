@@ -539,6 +539,19 @@ class AdminController extends Controller
     public function destroyUser($id)
     {
         $user = User::findOrFail($id);
+
+        if (auth()->id() === $user->id) {
+            return redirect()
+                ->back()
+                ->with('error', 'Anda tidak boleh menghapus akun Anda sendiri.');
+        }
+
+        if ($user->peminjaman()->where('status', 'dipinjam')->exists()) {
+            return redirect()
+                ->back()
+                ->with('error', 'User tidak dapat dihapus karena masih memiliki peminjaman aktif.');
+        }
+
         $user->delete();
 
         return redirect()->route('admin.user.index')->with('success', 'User berhasil dihapus.');
@@ -854,17 +867,21 @@ class AdminController extends Controller
     {
         $peminjaman = Peminjaman::with('detailPinjam')->findOrFail($id);
 
-        // Jika statusnya sedang dipinjam, kembalikan stok terlebih dahulu sebelum dihapus
+        // Peminjaman yang masih aktif tidak boleh dihapus
         if (in_array($peminjaman->status, ['dipinjam', 'telat'])) {
-            foreach ($peminjaman->detailPinjam as $detail) {
-                $detail->alat->increment('stok', $detail->jumlah);
-                $detail->alat->syncStatusKondisi();
-            }
+            return redirect()
+                ->route('admin.peminjaman.index')
+                ->with(
+                    'error',
+                    'Peminjaman yang masih berstatus dipinjam atau telat tidak dapat dihapus.'
+                );
         }
 
         $peminjaman->delete();
 
-        return redirect()->route('admin.peminjaman.index')->with('success', 'Data peminjaman berhasil dihapus.');    
+        return redirect()
+            ->route('admin.peminjaman.index')
+            ->with('success', 'Data peminjaman berhasil dihapus.');
     }
 
     // Pengembalian

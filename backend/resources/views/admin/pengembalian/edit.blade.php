@@ -110,9 +110,14 @@
 
         {{-- Daftar Alat --}}
         <div>
-            <h4 class="text-sm font-bold text-gray-800 uppercase tracking-wide mb-3">
+            <h4 class="text-sm font-bold text-gray-800 uppercase tracking-wide mb-1">
                 Alat yang Dikembalikan
             </h4>
+
+            <p class="text-xs text-gray-500 mb-3">
+                Kolom Jumlah Rusak hanya aktif jika kondisi alat = <b>Rusak</b>.
+                Sisa unit yang tidak rusak otomatis dicatat sebagai stok baik.
+            </p>
 
             <div class="border border-gray-200 rounded-lg overflow-hidden">
 
@@ -125,7 +130,15 @@
                             </th>
 
                             <th class="py-2 px-3 text-center">
-                                Jumlah
+                                Jumlah Dipinjam
+                            </th>
+
+                            <th class="py-2 px-3 text-center kol-rusak hidden">
+                                Jumlah Rusak
+                            </th>
+
+                            <th class="py-2 px-3 text-center kol-rusak hidden">
+                                Otomatis Baik
                             </th>
                         </tr>
                     </thead>
@@ -142,6 +155,24 @@
 
                                 <td class="py-2 px-3 text-center">
                                     {{ $detail->jumlah }} pcs
+                                </td>
+
+                                <td class="py-2 px-3 text-center kol-rusak hidden">
+                                    <input
+                                        type="number"
+                                        name="jumlah_rusak[{{ $detail->alat_id }}]"
+                                        min="0"
+                                        max="{{ $detail->jumlah }}"
+                                        value="{{ old('jumlah_rusak.' . $detail->alat_id, $detail->jumlah_rusak ?? 0) }}"
+                                        placeholder="0"
+                                        class="jumlah-rusak w-20 text-center border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400"
+                                        data-jumlah="{{ $detail->jumlah }}"
+                                    >
+                                </td>
+
+                                <td class="py-2 px-3 text-center kol-rusak hidden whitespace-nowrap">
+                                    <span class="text-xs font-semibold text-green-700 baik-otomatis">0</span>
+                                    <span class="text-xs text-gray-400">pcs</span>
                                 </td>
 
                             </tr>
@@ -291,5 +322,54 @@
 </div>
 
 </div>
+
+{{-- Script untuk show/hide kolom rusak + hitung otomatis --}}
+<script>
+    const kondisiKembali = document.getElementById('kondisi_kembali');
+    const dendaKerusakan = document.getElementById('denda_kerusakan');
+    const kolRusak       = document.querySelectorAll('.kol-rusak');
+    const inputRusak     = document.querySelectorAll('.jumlah-rusak');
+    const labelBaik      = document.querySelectorAll('.baik-otomatis');
+
+    function updateKondisi() {
+        const rusak = kondisiKembali.value === 'rusak';
+
+        kolRusak.forEach(el => el.classList.toggle('hidden', !rusak));
+        dendaKerusakan.disabled = !rusak;
+
+        if (!rusak) {
+            dendaKerusakan.value = 0;
+
+            // Kondisi Baik = semua jumlah_rusak dinolkan & dikunci
+            inputRusak.forEach(el => {
+                el.value = 0;
+                el.disabled = true;
+            });
+
+            labelBaik.forEach(el => el.textContent = '0');
+        } else {
+            inputRusak.forEach(el => {
+                el.disabled = false;
+            });
+
+            hitungBaik();
+        }
+    }
+
+    // Hitung jumlah otomatis yang "baik" = jumlah dipinjam - jumlah rusak
+    function hitungBaik() {
+        inputRusak.forEach((el, i) => {
+            const total = parseInt(el.dataset.jumlah || '0', 10);
+            const rusak = parseInt(el.value || '0', 10);
+
+            labelBaik[i].textContent = Math.max(0, total - rusak);
+        });
+    }
+
+    inputRusak.forEach(el => el.addEventListener('input', hitungBaik));
+    kondisiKembali.addEventListener('change', updateKondisi);
+
+    updateKondisi();
+</script>
 
 @endsection

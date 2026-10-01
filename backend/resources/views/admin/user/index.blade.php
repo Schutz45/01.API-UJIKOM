@@ -12,6 +12,12 @@
         </div>
     @endif
 
+    @if(session('error'))
+        <div class="mb-4 bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg shadow-sm text-sm">
+            {{ session('error') }}
+        </div>
+    @endif
+
     <div class="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
 
         <!-- Header tabel -->
@@ -191,13 +197,14 @@
                                     <!-- Tombol Hapus -->
                                     <form action="{{ route('admin.user.destroy', $user->id) }}"
                                           method="POST"
-                                          onsubmit="return confirm('Yakin ingin menghapus User ini?')">
+                                          onsubmit="return confirm('Yakin ingin menghapus User ini? {{ $user->id == auth()->id() ? 'Ini adalah akun Anda sendiri!' : '' }}')">
 
                                         @csrf
                                         @method('DELETE')
 
                                         <button type="submit"
-                                            class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition">
+                                            class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition {{ $user->id == auth()->id() ? 'opacity-50 cursor-not-allowed' : '' }}"
+                                            {{ $user->id == auth()->id() ? 'disabled' : '' }}>
                                             Hapus
                                         </button>
 

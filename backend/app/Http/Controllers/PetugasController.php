@@ -129,25 +129,25 @@ class PetugasController extends Controller
                         // Jika ada input spesifik nominal per-item, gunakan itu
                         if (isset($request->jumlah_rusak[$detail->alat_id]) && $request->jumlah_rusak[$detail->alat_id] !== '') {
                             $inputRusak = (int)$request->jumlah_rusak[$detail->alat_id];
-                            // Guard Kasus A: Nilai negatif dari input ditolak secara tegas
+                            
+                            // Guard Kasus A: Nilai negatif ditolak
                             if ($inputRusak < 0) {
                                 throw new \Exception("Jumlah rusak untuk alat '{$alat->nama_alat}' tidak boleh bernilai negatif.");
                             }
+
+                            // Guard Kasus B: Nilai melebihi jumlah pinjam ditolak (bukan dipotong)
+                            if ($inputRusak > $detail->jumlah) {
+                                throw new \Exception("Jumlah alat rusak untuk '{$alat->nama_alat}' ({$inputRusak}) tidak boleh melebihi jumlah yang dipinjam ({$detail->jumlah}).");
+                            }
+
                             $jmlRusak = $inputRusak;
                         } else {
-                            // POIN 1: Tanpa memasukkan nominal spesifik, anggap SELURUH item yang dipinjam rusak
+                            // Default: Seluruh item rusak jika input kosong
                             $jmlRusak = $detail->jumlah;
                         }
                     }
                     
-                    // Stock Guard Eksplisit: Pastikan batas aman secara matematis
-                    $jmlRusak = max(0, min($jmlRusak, $detail->jumlah));
-                    $jmlBaik  = max(0, $detail->jumlah - $jmlRusak);
-
-                    // Verifikasi konservasi kuantitas
-                    if (($jmlBaik + $jmlRusak) !== $detail->jumlah) {
-                        throw new \Exception("Perhitungan stok gagal: total unit kembali tidak sesuai dengan unit pinjam.");
-                    }
+                    $jmlBaik  = $detail->jumlah - $jmlRusak;
 
                     if ($jmlBaik > 0) {
                         $alat->increment('stok', $jmlBaik);

@@ -146,6 +146,31 @@
                             <td class="py-3 px-4 border-b min-w-[170px]">
                                 <div class="flex flex-col gap-2">
 
+                                    <!-- Form Ubah Status Cepat -->
+                                    @if($peminjaman->status !== 'dikembalikan')
+                                        <form action="{{ route('admin.peminjaman.updateStatus', $peminjaman->id) }}" method="POST" class="flex flex-col gap-1">
+                                            @csrf 
+                                            @method('PUT')
+                                            
+                                            <div class="flex items-center gap-1">
+                                                <span class="text-[10px] uppercase font-bold text-gray-400">Aksi:</span>
+                                                @if($peminjaman->status === 'telat')
+                                                    <span class="text-[10px] italic text-gray-400">Tidak ada aksi</span>
+                                                @else
+                                                    <select name="status" onchange="this.form.submit()" class="w-full text-[11px] border border-gray-300 rounded px-1.5 py-0.5 focus:outline-none bg-white cursor-pointer hover:border-blue-400 transition">
+                                                        <option value="" selected disabled> Pilih aksi... </option>
+                                                        @if($peminjaman->status === 'diajukan')
+                                                            <option value="dipinjam">Dipinjam</option>
+                                                        @elseif($peminjaman->status === 'dipinjam')
+                                                            <option value="telat">Telat</option>
+                                                        @endif
+                                                    </select>
+                                                @endif
+                                            </div>
+                                        </form>
+                                    @endif
+
+
                                     <!-- Tombol Kembalikan -->
                                     @if (in_array($peminjaman->status, ['dipinjam', 'telat']))
                                         <a href="{{ route('admin.pengembalian.create', $peminjaman->id) }}"
@@ -154,34 +179,24 @@
                                         </a>
                                     @endif
 
-                                    <!-- Form Ubah Status Cepat -->
-                                    @if($peminjaman->status !== 'dikembalikan')
-                                        <form action="{{ route('admin.peminjaman.updateStatus', $peminjaman->id) }}" method="POST" class="flex items-center">
-                                            @csrf 
-                                            @method('PUT')
-                                            <select name="status" onchange="this.form.submit()" class="w-full text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none">
-                                                @if($peminjaman->status === 'diajukan')
-                                                    <option value="diajukan" selected disabled>Diajukan</option>
-                                                    <option value="dipinjam">Dipinjam</option>
-                                                @elseif($peminjaman->status === 'dipinjam')
-                                                    <option value="dipinjam" selected disabled>Dipinjam</option>
-                                                    <option value="telat">Telat</option>
-                                                @elseif($peminjaman->status === 'telat')
-                                                    <option value="telat" selected disabled>Telat</option>
-                                                @endif
-                                            </select>
-                                        </form>
-                                    @endif
 
                                     <!-- Tombol Hapus -->
-                                    <form action="{{ route('admin.peminjaman.destroy', $peminjaman->id) }}" method="POST"
-                                        onsubmit="return confirm('Yakin ingin menghapus data peminjaman ini?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs font-semibold transition w-full whitespace-nowrap">
+                                    @if (in_array($peminjaman->status, ['dipinjam', 'telat']))
+                                        <button type="button" disabled
+                                            class="bg-red-200 text-red-400 px-3 py-1 rounded text-xs font-semibold w-full whitespace-nowrap cursor-not-allowed"
+                                            title="Peminjaman yang masih dipinjam atau telat tidak dapat dihapus">
                                             Hapus
                                         </button>
-                                    </form>
+                                    @else
+                                        <form action="{{ route('admin.peminjaman.destroy', $peminjaman->id) }}" method="POST"
+                                            onsubmit="return confirm('Yakin ingin menghapus data peminjaman ini?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs font-semibold transition w-full whitespace-nowrap">
+                                                Hapus
+                                            </button>
+                                        </form>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
