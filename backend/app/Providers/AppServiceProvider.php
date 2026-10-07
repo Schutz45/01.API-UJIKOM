@@ -55,7 +55,7 @@ class AppServiceProvider extends ServiceProvider
             if ($user->role === 'petugas') {
                 $badges['peminjaman'] = Peminjaman::where('status', 'diajukan')->count();
                 $badges['pengembalian'] = Peminjaman::where('permintaan_pengembalian', true)
-                    ->whereIn('status', ['dipinjam', 'telat'])
+                    ->where('status', 'dipinjam')
                     ->count();
             } elseif ($user->role === 'admin') {
                 $badges['alat_rusak'] = Alat::whereHas('unitAlat', function($q) {

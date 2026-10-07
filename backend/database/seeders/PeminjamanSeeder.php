@@ -9,6 +9,10 @@ class PeminjamanSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     *
+     * Catatan: status "telat" tidak perlu disimpan ke database.
+     * Ia dihitung otomatis oleh accessor Peminjaman::getStatusAttribute()
+     * saat status="dipinjam" dan tgl_kembali_plan sudah lewat.
      */
     public function run(): void
     {
@@ -26,10 +30,12 @@ class PeminjamanSeeder extends Seeder
                 'status'            =>  'dikembalikan',
             ],
             [
+                // Status tetap "dipinjam" di DB; accessor akan menampilkan "telat"
+                // karena tgl_kembali_plan (2026-06-06) sudah lewat dari tanggal sekarang.
                 'user_id'           =>  5,  // Eka (Peminjam)
                 'tgl_pinjam'        =>  '2026-06-03',
                 'tgl_kembali_plan'  =>  '2026-06-06',
-                'status'            =>  'telat',
+                'status'            =>  'dipinjam',
             ],
             [
                 'user_id'           =>  3,

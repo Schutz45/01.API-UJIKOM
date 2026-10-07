@@ -226,8 +226,10 @@ class PetugasController extends Controller
 
     public function indexPengembalian()
     {
+        // "telat" adalah status virtual (status DB = 'dipinjam' + tgl_kembali_plan lewat),
+        // jadi cukup query 'dipinjam' saja — accessor akan menampilkannya sebagai 'telat'.
         $peminjamans = Peminjaman::with(['user', 'detailPinjam.alat', 'pengembalian'])
-            ->whereIn('status', ['dipinjam', 'telat'])
+            ->where('status', 'dipinjam')
             ->latest()
             ->get();
 

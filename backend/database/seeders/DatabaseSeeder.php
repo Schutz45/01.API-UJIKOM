@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             KategoriSeeder::class,
             AlatSeeder::class,
+            UnitAlatSeeder::class,
             PeminjamanSeeder::class,
             DetailPinjamSeeder::class,
             PengembalianSeeder::class,

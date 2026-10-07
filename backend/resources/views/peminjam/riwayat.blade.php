@@ -272,7 +272,7 @@
                             font-extrabold
                             text-slate-800">
 
-                        {{ $peminjamans->whereIn('status', ['dipinjam', 'telat'])->count() }}
+                        {{ $peminjamans->where('status', 'dipinjam')->count() }}
 
                     </p>
 

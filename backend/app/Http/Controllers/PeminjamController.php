@@ -46,12 +46,17 @@ class PeminjamController extends Controller
                         }
 
                     // Cari alat
-                    $alat = Alat::findOrFail($alatId);
+                    $alat = Alat::lockForUpdate()->findOrFail($alatId);
 
-                    // Pastikan stok cukup
-                    if ($jumlah > $alat->stok) {
-                        throw new \Exception("Jumlah {$alat->nama_alat} yang diminta melebihi stok tersedia.");
-                }
+                    // Pastikan jumlah unit tersedia cukup (sistem UnitAlat)
+                    $unitTersedia = $alat->unitAlat()
+                        ->where('status', 'tersedia')
+                        ->lockForUpdate()
+                        ->count();
+
+                    if ($jumlah > $unitTersedia) {
+                        throw new \Exception("Jumlah {$alat->nama_alat} yang diminta melebihi stok tersedia ({$unitTersedia} unit).");
+                    }
             }
 
             // Buat data peminjaman

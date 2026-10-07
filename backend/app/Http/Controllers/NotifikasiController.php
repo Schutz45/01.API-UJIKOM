@@ -91,7 +91,7 @@ class NotifikasiController extends Controller
                 'permintaan_pengembalian',
                 true
             )
-                ->whereIn('status', ['dipinjam', 'telat'])
+                ->where('status', 'dipinjam')
                 ->count();
 
         } elseif ($user->role === 'admin') {
