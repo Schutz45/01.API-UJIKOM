@@ -198,7 +198,7 @@
                                         </span>
 
                                         <span class="text-xs bg-gray-200 px-1.5 py-0.5 rounded">
-                                            ({{ $detail->jumlah }} pcs)
+                                            ({{ $detail->jumlah - $detail->unitAlat->where('pivot.kondisi_masuk', 'rusak')->count() }} Baik, {{ $detail->unitAlat->where('pivot.kondisi_masuk', 'rusak')->count() }} Rusak)
                                         </span>
                                     </li>
 
@@ -257,18 +257,10 @@
                         <td class="py-3 px-4 border-b text-center min-w-[160px]">
                             <div class="flex justify-center items-center gap-2 whitespace-nowrap">
 
-                            {{-- Edit --}}
-                                <a href="{{ route('admin.pengembalian.edit', $pengembalian->id) }}" class="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-lg transition" >
-                                    Edit
-                                </a> 
-
-                            {{-- Hapus --}} 
-                                <form action="{{ route('admin.pengembalian.destroy', $pengembalian->id) }}" 
-                                    method="POST" onsubmit="return confirm('Yakin ingin menghapus data pengembalian ini? Stok alat akan dikurangi kembali dan status peminjaman menjadi dipinjam.');" > @csrf @method('DELETE') 
-                                    <button type="submit" class="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition" >
-                                         Hapus 
-                                    </button> 
-                                </form>
+                            {{-- Detail --}}
+                                <a href="{{ route('admin.pengembalian.show', $pengembalian->id) }}" class="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded-lg transition" >
+                                    <i class="bi bi-eye-fill mr-1"></i> Detail
+                                </a>
 
                             </div>
                         </td>

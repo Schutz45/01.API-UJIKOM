@@ -58,7 +58,9 @@ class AppServiceProvider extends ServiceProvider
                     ->whereIn('status', ['dipinjam', 'telat'])
                     ->count();
             } elseif ($user->role === 'admin') {
-                $badges['alat_rusak'] = Alat::where('stok_rusak', '>', 0)->count();
+                $badges['alat_rusak'] = Alat::whereHas('unitAlat', function($q) {
+                    $q->where('kondisi', 'rusak');
+                })->count();
             }
 
             $view->with(compact('jumlahNotifikasi', 'badges'));

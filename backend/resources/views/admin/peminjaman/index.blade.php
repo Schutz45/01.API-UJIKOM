@@ -135,39 +135,38 @@
                                 <span class="block font-semibold">Rencana: {{ $peminjaman->tgl_kembali_plan }}</span>
                             </td>
                             <td class="py-3 px-4 border-b whitespace-nowrap">
+                                {{-- Status 'telat' dihitung otomatis oleh accessor getStatusAttribute di Model --}}
                                 <span class="px-2.5 py-1 text-xs font-semibold rounded-full
                                     @if($peminjaman->status == 'diajukan') bg-yellow-100 text-yellow-800
                                     @elseif($peminjaman->status == 'dipinjam') bg-blue-100 text-blue-800
                                     @elseif($peminjaman->status == 'dikembalikan') bg-emerald-100 text-emerald-800
                                     @else bg-red-100 text-red-800 @endif">
                                     {{ ucfirst($peminjaman->status) }}
-                                </span>
+                                    </span>
+                                    @if($peminjaman->permintaan_pengembalian)
+                                        <div class="mt-1">
+                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white animate-pulse shadow-sm">
+                                                <i class="bi bi-bell-fill mr-1"></i> MINTA KEMBALI
+                                            </span>
+                                        </div>
+                                    @endif
                             </td>
                             <td class="py-3 px-4 border-b min-w-[170px]">
                                 <div class="flex flex-col gap-2">
 
                                     <!-- Form Ubah Status Cepat -->
                                     @if($peminjaman->status !== 'dikembalikan')
-                                        <form action="{{ route('admin.peminjaman.updateStatus', $peminjaman->id) }}" method="POST" class="flex flex-col gap-1">
-                                            @csrf 
-                                            @method('PUT')
-                                            
-                                            <div class="flex items-center gap-1">
-                                                <span class="text-[10px] uppercase font-bold text-gray-400">Aksi:</span>
-                                                @if($peminjaman->status === 'telat')
-                                                    <span class="text-[10px] italic text-gray-400">Tidak ada aksi</span>
-                                                @else
-                                                    <select name="status" onchange="this.form.submit()" class="w-full text-[11px] border border-gray-300 rounded px-1.5 py-0.5 focus:outline-none bg-white cursor-pointer hover:border-blue-400 transition">
-                                                        <option value="" selected disabled> Pilih aksi... </option>
-                                                        @if($peminjaman->status === 'diajukan')
-                                                            <option value="dipinjam">Dipinjam</option>
-                                                        @elseif($peminjaman->status === 'dipinjam')
-                                                            <option value="telat">Telat</option>
-                                                        @endif
-                                                    </select>
-                                                @endif
-                                            </div>
-                                        </form>
+                                        @if($peminjaman->status === 'diajukan')
+                                            <button type="button" 
+                                                onclick="openAlokasiModal({{ $peminjaman->id }}, {{ json_encode($peminjaman->detailPinjam) }})"
+                                                class="w-full bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold px-2 py-1.5 rounded transition shadow-sm">
+                                                Alokasi & Setujui
+                                            </button>
+                                        @else
+                                            <span class="text-[10px] italic text-gray-400 text-center py-1">
+                                                {{ ucfirst($peminjaman->status) }}
+                                            </span>
+                                        @endif
                                     @endif
 
 
@@ -213,4 +212,105 @@
             {{ $peminjamans->links() }}
         </div>
     </div>
+
+    {{-- Modal Alokasi Unit Alat (Admin) --}}
+    <div id="alokasiModal" class="fixed inset-0 z-[9999] hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-50 backdrop-blur-sm" aria-hidden="true" onclick="closeAlokasiModal()"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-2xl shadow-2xl sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-gray-100">
+                <form id="alokasiForm" method="POST">
+                    @csrf
+                    @method('PUT')
+                    <input type="hidden" name="status" value="dipinjam">
+
+                    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4 flex justify-between items-center">
+                        <div>
+                            <h3 class="text-lg font-bold text-white" id="modal-alokasi-title">Pilih Unit Alat untuk Peminjaman</h3>
+                            <p class="text-xs text-blue-100">Pilih nomor seri unit yang akan dipinjamkan</p>
+                        </div>
+                        <button type="button" onclick="closeAlokasiModal()" class="text-white hover:text-gray-200 transition"><i class="bi bi-x-lg"></i></button>
+                    </div>
+
+                    <div class="p-6 max-h-[60vh] overflow-y-auto space-y-6" id="alokasiContainer">
+                        <!-- JS injects items here -->
+                    </div>
+
+                    <div class="bg-gray-50 px-6 py-4 flex justify-between items-center border-t border-gray-200">
+                        <span id="alokasiSelectionCount" class="text-xs text-gray-500 font-medium">0 unit dipilih</span>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="closeAlokasiModal()" class="px-4 py-2 text-sm font-bold text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition shadow-sm">Batal</button>
+                            <button type="submit" id="btnSubmitAlokasi" class="px-5 py-2 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition shadow-sm">Setujui & Alokasikan</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openAlokasiModal(peminjamanId, detailPinjam) {
+            const form = document.getElementById('alokasiForm');
+            form.action = "{{ url('/admin/peminjaman') }}/" + peminjamanId + "/status";
+
+            const container = document.getElementById('alokasiContainer');
+            container.innerHTML = '';
+
+            detailPinjam.forEach(detail => {
+                const alat = detail.alat;
+                const units = (alat.unit_alat || []).filter(u => u.status === 'tersedia');
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'border border-gray-200 rounded-xl overflow-hidden';
+
+                let unitOptionsHtml = '';
+                if (units.length === 0) {
+                    unitOptionsHtml = '<p class="text-xs text-red-500 py-2">Tidak ada unit tersedia untuk alat ini.</p>';
+                } else {
+                    unitOptionsHtml = '<div class="grid grid-cols-2 sm:grid-cols-3 gap-2">';
+                    units.forEach(unit => {
+                        unitOptionsHtml += `
+                            <label class="flex items-center gap-2 p-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-blue-50 text-xs font-mono transition has-[:checked]:bg-blue-50 has-[:checked]:border-blue-500">
+                                <input type="checkbox" name="unit[${detail.alat_id}][]" value="${unit.id}" 
+                                    class="rounded text-blue-600 focus:ring-blue-500 border-gray-300 w-3.5 h-3.5"
+                                    onchange="checkAlokasiValidation()">
+                                <span>${unit.nomor_seri}</span>
+                            </label>
+                        `;
+                    });
+                    unitOptionsHtml += '</div>';
+                }
+
+                wrapper.innerHTML = `
+                    <div class="bg-gray-50 px-4 py-2.5 border-b border-gray-200 flex justify-between items-center">
+                        <span class="font-bold text-sm text-gray-800">${alat.nama_alat}</span>
+                        <span class="text-xs font-semibold px-2 py-0.5 rounded bg-blue-100 text-blue-800">Harus dipilih: ${detail.jumlah} unit</span>
+                    </div>
+                    <div class="p-4">
+                        ${unitOptionsHtml}
+                    </div>
+                `;
+
+                container.appendChild(wrapper);
+            });
+
+            checkAlokasiValidation();
+            document.getElementById('alokasiModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function checkAlokasiValidation() {
+            const checked = document.querySelectorAll('#alokasiContainer input[type="checkbox"]:checked');
+            document.getElementById('alokasiSelectionCount').innerText = checked.length + ' unit dipilih';
+        }
+
+        function closeAlokasiModal() {
+            document.getElementById('alokasiModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeAlokasiModal();
+        });
+    </script>
 @endsection

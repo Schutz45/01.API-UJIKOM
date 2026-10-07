@@ -97,11 +97,9 @@ class NotifikasiController extends Controller
         } elseif ($user->role === 'admin') {
 
             // Jumlah jenis alat yang memiliki unit rusak
-            $badges['alat_rusak'] = Alat::where(
-                'stok_rusak',
-                '>',
-                0
-            )->count();
+            $badges['alat_rusak'] = Alat::whereHas('unitAlat', function($q) {
+                $q->where('kondisi', 'rusak');
+            })->count();
         }
 
         return response()->json([

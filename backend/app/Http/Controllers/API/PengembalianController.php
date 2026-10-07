@@ -102,12 +102,21 @@ class PengembalianController extends Controller
                         }
 
                         if ($jmlBaik > 0) {
-                            $alat->increment('stok', $jmlBaik);
+                            // Kembalikan unit ke tersedia
+                            $alat->unitAlat()
+                                ->where('kondisi', 'baik')
+                                ->orderBy('nomor_seri')
+                                ->take($jmlBaik)
+                                ->update(['status' => 'tersedia']);
                         }
                         if ($jmlRusak > 0) {
-                            $alat->increment('stok_rusak', $jmlRusak);
+                            // Tandai unit rusak
+                            $alat->unitAlat()
+                                ->where('kondisi', 'baik')
+                                ->orderBy('nomor_seri')
+                                ->take($jmlRusak)
+                                ->update(['status' => 'rusak', 'kondisi' => 'rusak']);
                         }
-                        $alat->syncStatusKondisi();
 
                         // Simpan info kerusakan ke detail_pinjam untuk history
                         $detail->update(['jumlah_rusak' => $jmlRusak]);
@@ -200,17 +209,27 @@ class PengembalianController extends Controller
                 // Tarik kembali stok ke gudang berdasarkan kondisi sebelumnya
                 foreach ($peminjaman->detailPinjam as $detail) {
                     $alat = Alat::lockForUpdate()->findOrFail($detail->alat_id);
-                    
+
                     $jmlRusak = $detail->jumlah_rusak;
                     $jmlBaik  = $detail->jumlah - $jmlRusak;
 
-                    if ($alat->stok < $jmlBaik || $alat->stok_rusak < $jmlRusak) {
-                         throw new Exception("Gagal membatalkan pengembalian. Stok '{$alat->nama_alat}' tidak konsisten untuk ditarik.");
+                    // Kembalikan unit baik menjadi dipinjam (ditarik dari stok)
+                    if ($jmlBaik > 0) {
+                        $alat->unitAlat()
+                            ->where('kondisi', 'baik')
+                            ->where('status', 'tersedia')
+                            ->orderBy('nomor_seri')
+                            ->take($jmlBaik)
+                            ->update(['status' => 'dipinjam']);
                     }
-
-                    $alat->decrement('stok', $jmlBaik);
-                    $alat->decrement('stok_rusak', $jmlRusak);
-                    $alat->syncStatusKondisi();
+                    // Kembalikan unit rusak menjadi dipinjam lagi
+                    if ($jmlRusak > 0) {
+                        $alat->unitAlat()
+                            ->where('kondisi', 'rusak')
+                            ->orderBy('nomor_seri')
+                            ->take($jmlRusak)
+                            ->update(['status' => 'dipinjam', 'kondisi' => 'baik']);
+                    }
                     $detail->update(['jumlah_rusak' => 0]);
                 }
 

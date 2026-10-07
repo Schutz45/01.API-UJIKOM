@@ -106,7 +106,7 @@
                                 <tr>
                                     <th class="px-4 py-3 border-b">Nama Alat</th>
                                     <th class="px-4 py-3 border-b text-center">Dipinjam</th>
-                                    <th class="px-4 py-3 border-b text-center kol-rusak hidden">Jumlah Rusak</th>
+                                    <th class="px-4 py-3 border-b text-center kol-rusak">Jumlah Rusak</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -114,7 +114,7 @@
                                     <tr>
                                         <td class="px-4 py-3 border-b font-medium">{{ $detail->alat->nama_alat ?? 'Alat Dihapus' }}</td>
                                         <td class="px-4 py-3 border-b text-center font-bold">{{ $detail->jumlah }}</td>
-                                        <td class="px-4 py-3 border-b text-center kol-rusak hidden">
+                                        <td class="px-4 py-3 border-b text-center kol-rusak">
                                             <input type="number" 
                                                    name="jumlah_rusak[{{ $detail->alat_id }}]" 
                                                    min="0" 
@@ -312,12 +312,24 @@
 
         function toggleRusak() {
             if (kondisiSelect.value === 'rusak') {
-                kolRusak.forEach(el => el.classList.remove('hidden'));
                 dendaKerusakanInput.disabled = false;
+                dendaKerusakanInput.required = true;
+                if (dendaKerusakanInput.value == 0) dendaKerusakanInput.value = '';
+                document.querySelectorAll('input[name^=jumlah_rusak]').forEach(el => {
+                    el.disabled = false;
+                    el.required = true;
+                    el.classList.remove('bg-gray-100');
+                });
             } else {
-                kolRusak.forEach(el => el.classList.add('hidden'));
                 dendaKerusakanInput.disabled = true;
+                dendaKerusakanInput.required = false;
                 dendaKerusakanInput.value = 0;
+                document.querySelectorAll('input[name^=jumlah_rusak]').forEach(el => {
+                    el.value = 0;
+                    el.disabled = true;
+                    el.required = false;
+                    el.classList.add('bg-gray-100');
+                });
             }
             calculateDenda();
         }

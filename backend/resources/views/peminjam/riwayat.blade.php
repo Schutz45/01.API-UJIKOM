@@ -768,6 +768,16 @@
 
                                         <th
                                             class="px-4 py-3
+                                                   text-left
+                                                   font-semibold
+                                                   text-slate-600">
+
+                                            Unit / Nomor Seri
+
+                                        </th>
+
+                                        <th
+                                            class="px-4 py-3
                                                    text-center
                                                    font-semibold
                                                    text-slate-600">
@@ -805,6 +815,34 @@
 
                                                 {{ $detail->alat->kategori->nama_kategori ?? '-' }}
 
+                                            </td>
+
+                                            <td class="px-4 py-3">
+                                                <div class="flex flex-wrap gap-1">
+                                                    @forelse($detail->unitAlat as $unit)
+                                                        @php
+                                                            $kondisiMasuk = $unit->pivot->kondisi_masuk;
+                                                            $isRusak = $kondisiMasuk === 'rusak';
+                                                            $badgeClass = $isRusak 
+                                                                ? 'bg-red-100 text-red-700 border-red-200' 
+                                                                : ($kondisiMasuk === 'baik' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-700 border-slate-200');
+                                                        @endphp
+                                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border {{ $badgeClass }}">
+                                                            {{ $unit->nomor_seri }}
+                                                            @if($kondisiMasuk)
+                                                                <i class="bi {{ $isRusak ? 'bi-x-circle-fill' : 'bi-check-circle-fill' }} ml-1"></i>
+                                                            @endif
+                                                        </span>
+                                                    @empty
+                                                        <span class="text-xs text-slate-400 italic">
+                                                            @if($peminjaman->status === 'diajukan')
+                                                                Menunggu alokasi petugas
+                                                            @else
+                                                                Unit tidak terdata
+                                                            @endif
+                                                        </span>
+                                                    @endforelse
+                                                </div>
                                             </td>
 
                                             <td

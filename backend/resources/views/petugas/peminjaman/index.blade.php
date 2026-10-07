@@ -127,9 +127,20 @@
 
                         <tr class="hover:bg-gray-50 transition align-top">
 
-                            {{-- Peminjam --}}
                             <td class="py-3 px-4 border-b font-medium text-gray-900 whitespace-nowrap">
-                                {{ $item->user->name ?? '-' }}
+                                <button type="button" 
+                                    onclick="showUserModal({
+                                        name: '{{ addslashes($item->user->name ?? 'User') }}',
+                                        nis: '{{ addslashes($item->user->nis ?? 'Belum diatur') }}',
+                                        kelas: '{{ addslashes($item->user->kelas ?? 'Belum diatur') }}',
+                                        email: '{{ addslashes($item->user->email ?? '-') }}',
+                                        no_hp: '{{ addslashes($item->user->no_hp ?? '-') }}',
+                                        alamat: '{{ addslashes($item->user->alamat ?? '-') }}',
+                                        foto: '{{ $item->user->foto_profile ? asset('storage/' . $item->user->foto_profile) : 'https://ui-avatars.com/api/?name=' . urlencode($item->user->name ?? 'User') }}'
+                                    })"
+                                    class="text-blue-600 hover:text-blue-800 hover:underline text-left font-bold transition">
+                                    {{ $item->user->name ?? '-' }}
+                                </button>
                             </td>
 
 
@@ -174,25 +185,17 @@
 
                                     <div class="flex justify-center items-center gap-2 whitespace-nowrap">
 
-                                        {{-- Tombol Setujui --}}
-                                        <form
-                                            action="{{ route('petugas.peminjaman.setujui', $item->id) }}"
-                                            method="POST"
+                                        {{-- Tombol Setujui (ke halaman alokasi unit) --}}
+                                        <a
+                                            href="{{ route('petugas.peminjaman.alokasi', $item->id) }}"
+                                            class="bg-emerald-600 hover:bg-emerald-700
+                                                   text-white px-3 py-1.5 rounded
+                                                   text-xs font-semibold
+                                                   transition shadow-sm inline-flex items-center gap-1"
                                         >
-                                            @csrf
-
-                                            <button
-                                                type="submit"
-                                                onclick="return confirm('Setujui peminjaman alat ini?')"
-                                                class="bg-emerald-600 hover:bg-emerald-700
-                                                       text-white px-3 py-1.5 rounded
-                                                       text-xs font-semibold
-                                                       transition shadow-sm"
-                                            >
-                                                Setujui
-                                            </button>
-                                        </form>
-
+                                            <i class="bi bi-check-lg"></i>
+                                            Setujui
+                                        </a>
 
                                         {{-- Tombol Tolak --}}
                                         <form
@@ -217,8 +220,9 @@
 
                                 @else
 
-                                    <span class="text-xs font-semibold text-blue-600
-                                                 bg-blue-50 px-2.5 py-1 rounded">
+                                    <span class="text-xs font-semibold 
+                                                 @if($item->status === 'telat') text-red-600 bg-red-50 @else text-blue-600 bg-blue-50 @endif
+                                                 px-2.5 py-1 rounded">
                                         {{ ucfirst($item->status) }}
                                     </span>
 
@@ -251,4 +255,76 @@
 
     </div>
 
+</div>
+
+{{-- Modal Profil Peminjam --}}
+<div id="userProfileModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" aria-hidden="true" onclick="closeUserModal()"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-2xl shadow-xl sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-gray-200">
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-bold text-white" id="modal-title">Profil Peminjam</h3>
+                    <button type="button" onclick="closeUserModal()" class="text-white hover:text-gray-200 transition"><i class="bi bi-x-lg"></i></button>
+                </div>
+            </div>
+            <div class="px-6 py-6 bg-white">
+                <div class="flex flex-col items-center sm:flex-row sm:items-start gap-6">
+                    <img id="modal-foto" src="" alt="Profile" class="w-24 h-24 rounded-2xl object-cover border-4 border-gray-100 shadow-sm">
+                    <div class="flex-1 text-center sm:text-left">
+                        <h4 id="modal-name" class="text-xl font-bold text-gray-900"></h4>
+                        <p class="text-sm font-medium text-blue-600">Siswa / Peminjam</p>
+                        <div class="mt-4 space-y-3">
+                            <div class="flex items-center justify-center sm:justify-start gap-3 text-sm">
+                                <div class="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400"><i class="bi bi-card-text"></i></div>
+                                <div><p class="text-xs text-gray-400 font-medium uppercase tracking-wider">NIS</p><p id="modal-nis" class="text-gray-700 font-semibold"></p></div>
+                            </div>
+                            <div class="flex items-center justify-center sm:justify-start gap-3 text-sm">
+                                <div class="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400"><i class="bi bi-door-open"></i></div>
+                                <div><p class="text-xs text-gray-400 font-medium uppercase tracking-wider">Kelas</p><p id="modal-kelas" class="text-gray-700 font-semibold"></p></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <hr class="my-6 border-gray-100">
+                <div class="grid grid-cols-1 gap-5">
+                    <div class="flex items-start gap-3 text-sm">
+                        <div class="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 shrink-0"><i class="bi bi-envelope"></i></div>
+                        <div><p class="text-xs text-gray-400 font-medium uppercase tracking-wider">Email</p><p id="modal-email" class="text-gray-700 font-medium"></p></div>
+                    </div>
+                    <div class="flex items-start gap-3 text-sm">
+                        <div class="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 shrink-0"><i class="bi bi-telephone"></i></div>
+                        <div><p class="text-xs text-gray-400 font-medium uppercase tracking-wider">No. Telepon</p><p id="modal-no-hp" class="text-gray-700 font-medium"></p></div>
+                    </div>
+                    <div class="flex items-start gap-3 text-sm">
+                        <div class="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 shrink-0"><i class="bi bi-geo-alt"></i></div>
+                        <div><p class="text-xs text-gray-400 font-medium uppercase tracking-wider">Alamat</p><p id="modal-alamat" class="text-gray-700 font-medium"></p></div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-6 py-4 flex justify-end">
+                <button type="button" onclick="closeUserModal()" class="px-5 py-2 text-sm font-bold text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition shadow-sm">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showUserModal(user) {
+        document.getElementById('modal-name').innerText = user.name;
+        document.getElementById('modal-nis').innerText = user.nis;
+        document.getElementById('modal-kelas').innerText = user.kelas;
+        document.getElementById('modal-email').innerText = user.email;
+        document.getElementById('modal-no-hp').innerText = user.no_hp;
+        document.getElementById('modal-alamat').innerText = user.alamat;
+        document.getElementById('modal-foto').src = user.foto;
+        document.getElementById('userProfileModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+    function closeUserModal() {
+        document.getElementById('userProfileModal').classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+</script>
 @endsection

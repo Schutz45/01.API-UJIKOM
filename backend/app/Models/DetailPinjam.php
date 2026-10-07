@@ -27,4 +27,10 @@ class DetailPinjam extends Model
     public function alat(): BelongsTo {
         return $this->belongsTo(Alat::class);
     }
+
+    public function unitAlat(): \Illuminate\Database\Eloquent\Relations\BelongsToMany {
+        return $this->belongsToMany(UnitAlat::class, 'detail_pinjam_unit')
+                    ->withPivot('kondisi_keluar', 'kondisi_masuk')
+                    ->withTimestamps();
+    }
 }

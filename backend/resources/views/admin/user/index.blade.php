@@ -152,9 +152,16 @@
                                         </div>
                                     @endif
 
-                                    <span class="font-medium text-gray-900">
-                                        {{ $user->name }}
-                                    </span>
+                                    <div class="flex flex-col">
+                                        <span class="font-medium text-gray-900">
+                                            {{ $user->name }}
+                                        </span>
+                                        @if($user->role === 'peminjam')
+                                            <span class="text-[10px] text-gray-400">
+                                                NIS: {{ $user->nis ?? '-' }} | {{ $user->kelas ?? '-' }}
+                                            </span>
+                                        @endif
+                                    </div>
 
                                 </div>
                             </td>

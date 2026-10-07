@@ -18,6 +18,26 @@
             @enderror
         </div>
 
+        {{-- NIS & Kelas --}}
+        <div class="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-gray-700 text-sm font-semibold mb-2">NIS <span class="text-gray-400 font-normal text-xs">(opsional)</span></label>
+                <input type="text" name="nis" value="{{ old('nis') }}" placeholder="Contoh: 123456789"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                @error('nis')
+                    <span class="text-red-500 text-xs">{{ $message }}</span>
+                @enderror
+            </div>
+            <div>
+                <label class="block text-gray-700 text-sm font-semibold mb-2">Kelas <span class="text-gray-400 font-normal text-xs">(opsional)</span></label>
+                <input type="text" name="kelas" value="{{ old('kelas') }}" placeholder="Contoh: XII PPLG 1"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                @error('kelas')
+                    <span class="text-red-500 text-xs">{{ $message }}</span>
+                @enderror
+            </div>
+        </div>
+
         <div class="mb-4">
             <label class="block text-gray-700 text-sm font-semibold mb-2">Email</label>
             <input type="text" name="email" value="{{ old('email') }}"

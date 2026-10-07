@@ -28,37 +28,72 @@ class PetugasController extends Controller
         return view('petugas.peminjaman.index', compact('peminjamans', 'search'));
     }
 
-    public function setujuiPeminjaman($id)
+    // Menampilkan form alokasi unit (pemilihan nomor seri manual oleh Petugas)
+    public function alokasiPeminjaman($id)
     {
+        $peminjaman = Peminjaman::with(['user', 'detailPinjam.alat.unitAlat'])
+            ->where('status', 'diajukan')
+            ->findOrFail($id);
+
+        return view('petugas.peminjaman.alokasi', compact('peminjaman'));
+    }
+
+    public function setujuiPeminjaman(Request $request, $id)
+    {
+        $request->validate([
+            'unit'              =>  ['required', 'array', 'min:1'],
+            'unit.*'            =>  ['required', 'array', 'min:1'],
+            'unit.*.*'          =>  ['required', 'integer', 'exists:unit_alat,id'],
+        ], [
+            'unit.required'     =>  'Anda harus memilih minimal satu unit alat.',
+            'unit.*.min'        =>  'Jumlah unit yang dipilih harus sesuai dengan jumlah yang dipinjam.',
+            'unit.*.*.exists'   =>  'Unit alat yang dipilih tidak valid.',
+        ]);
+
         DB::beginTransaction();
         try {
             $peminjaman =   Peminjaman::with('detailPinjam.alat')->lockForUpdate()->findOrFail($id);
 
-            // Pastikan hanya pengajuan yang bisa disetujui (guard transisi eksplisit)
+            // Pastikan hanya pengajuan yang bisa disetujui
             if (!$peminjaman->canTransitionTo('dipinjam')) {
                 return redirect()->back()->with('error', "Peminjaman ini berstatus '{$peminjaman->status}' dan tidak dapat disetujui.");
             }
 
-            // Cek stok semua alat terlebih dahulu
+            // Validasi & alokasikan unit pilihan Petugas
             foreach ($peminjaman->detailPinjam as $detail) {
-                $alat = $detail->alat;
+                $unitIds   = $request->unit[$detail->alat_id] ?? [];
+                $unitIds   = array_map('intval', $unitIds);
 
-                if ($alat->stok < $detail->jumlah) {
-                    throw new \Exception("Stok alat '{$alat->nama_alat}' tidak mencukupi.");
+                // Jumlah unit yang dipilih harus sama dengan jumlah yang diajukan
+                if (count($unitIds) !== (int) $detail->jumlah) {
+                    $alat = $detail->alat;
+                    throw new \Exception("Jumlah unit yang dipilih untuk alat '{$alat->nama_alat}' (#{count($unitIds)}) harus sama dengan jumlah pinjam ({$detail->jumlah}).");
                 }
-            }
 
-            // Kurangi stok alat setelah semua stok dinyatakan cukup
-            foreach ($peminjaman->detailPinjam as $detail) {
-                $detail->alat->decrement('stok', $detail->jumlah);
-                $detail->alat->syncStatusKondisi();
+                // Pastikan semua unit milik alat yang benar DAN berstatus tersedia (lock untuk antisipasi race condition)
+                $units = \App\Models\UnitAlat::whereIn('id', $unitIds)
+                    ->where('alat_id', $detail->alat_id)
+                    ->where('status', 'tersedia')
+                    ->lockForUpdate()
+                    ->get();
+
+                if ($units->count() !== count($unitIds)) {
+                    $alat = $detail->alat;
+                    throw new \Exception("Beberapa unit untuk alat '{$alat->nama_alat}' tidak tersedia atau bukan milik alat tersebut. Silakan pilih ulang.");
+                }
+
+                // Tandai unit sebagai dipinjam dan masukkan ke pivot detail_pinjam_unit
+                foreach ($units as $unit) {
+                    $unit->update(['status' => 'dipinjam']);
+                    $detail->unitAlat()->attach($unit->id, ['kondisi_keluar' => $unit->kondisi]);
+                }
             }
 
             // Ubah status menjadi dipinjam
             $peminjaman->update(['status' => 'dipinjam']);
 
             DB::commit();
-            return redirect()->back()->with('success', 'Peminjaman disetujui dan stok alat dikurangi.');
+            return redirect()->route('petugas.peminjaman.index')->with('success', 'Peminjaman disetujui dan unit alat berhasil dialokasikan.');
         } catch (\Exception $e) {
             DB::rollback();
             return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
@@ -69,7 +104,9 @@ class PetugasController extends Controller
     {
         $request->validate([
             'kondisi_kembali'   =>  'required|in:baik,rusak',
-            'denda'             =>  'nullable|integer|min:0',
+            'denda'             =>  'required_if:kondisi_kembali,rusak|integer|min:0',
+            'jumlah_rusak'      =>  'required_if:kondisi_kembali,rusak|array',
+            'jumlah_rusak.*'    =>  'nullable|integer|min:0',
         ]);
 
         DB::beginTransaction();
@@ -114,53 +151,37 @@ class PetugasController extends Controller
                 'petugas_id'            =>  auth()->id(),
             ]);
 
-            // Kembalikan stok alat berdasarkan nominal rusak per item
+            // Kembalikan stok unit alat
             foreach ($peminjaman->detailPinjam as $detail) {
-                // Guard Kasus B: Nilai detail tidak boleh negatif atau nol
-                if ($detail->jumlah <= 0) {
-                    throw new \Exception("Integritas data terganggu: jumlah pinjam untuk alat ID #{$detail->alat_id} bernilai tidak valid ({$detail->jumlah}).");
+                $alat = $detail->alat;
+                $jmlRusak = 0;
+
+                // Ambil unit yang dipinjam untuk detail ini
+                $units = $detail->unitAlat;
+
+                if ($request->kondisi_kembali === 'rusak') {
+                    $inputRusak = $request->jumlah_rusak[$detail->alat_id] ?? 0;
+                    $jmlRusak = (int)$inputRusak;
                 }
 
-                $alat = $detail->alat;
-                if ($alat) {
-                    $jmlRusak = 0;
-
-                    if ($request->kondisi_kembali === 'rusak') {
-                        // Jika ada input spesifik nominal per-item, gunakan itu
-                        if (isset($request->jumlah_rusak[$detail->alat_id]) && $request->jumlah_rusak[$detail->alat_id] !== '') {
-                            $inputRusak = (int)$request->jumlah_rusak[$detail->alat_id];
-                            
-                            // Guard Kasus A: Nilai negatif ditolak
-                            if ($inputRusak < 0) {
-                                throw new \Exception("Jumlah rusak untuk alat '{$alat->nama_alat}' tidak boleh bernilai negatif.");
-                            }
-
-                            // Guard Kasus B: Nilai melebihi jumlah pinjam ditolak (bukan dipotong)
-                            if ($inputRusak > $detail->jumlah) {
-                                throw new \Exception("Jumlah alat rusak untuk '{$alat->nama_alat}' ({$inputRusak}) tidak boleh melebihi jumlah yang dipinjam ({$detail->jumlah}).");
-                            }
-
-                            $jmlRusak = $inputRusak;
-                        } else {
-                            // Default: Seluruh item rusak jika input kosong
-                            $jmlRusak = $detail->jumlah;
-                        }
+                // Update kondisi masing-masing unit
+                $rusakCount = 0;
+                foreach ($units as $unit) {
+                    if ($rusakCount < $jmlRusak) {
+                        $unit->update(['status' => 'rusak', 'kondisi' => 'rusak']);
+                        $detail->unitAlat()->updateExistingPivot($unit->id, ['kondisi_masuk' => 'rusak']);
+                        $rusakCount++;
+                    } else {
+                        $unit->update(['status' => 'tersedia', 'kondisi' => 'baik']);
+                        $detail->unitAlat()->updateExistingPivot($unit->id, ['kondisi_masuk' => 'baik']);
                     }
-                    
-                    $jmlBaik  = $detail->jumlah - $jmlRusak;
+                }
 
-                    if ($jmlBaik > 0) {
-                        $alat->increment('stok', $jmlBaik);
-                    }
-                    if ($jmlRusak > 0) {
-                        $alat->increment('stok_rusak', $jmlRusak);
-                    }
-                    $alat->syncStatusKondisi();
+                // Update info di detail_pinjam
+                $detail->update(['jumlah_rusak' => $jmlRusak]);
 
-                    if ($jmlRusak > 0) {
-                        // Notifikasi otomatis ke Admin (alat rusak baru)
-                        \App\Services\NotifikasiService::alatRusakBaru($alat, $jmlRusak);
-                    }
+                if ($jmlRusak > 0 && $alat) {
+                    \App\Services\NotifikasiService::alatRusakBaru($alat, $jmlRusak);
                 }
             }
 
@@ -205,10 +226,6 @@ class PetugasController extends Controller
 
     public function indexPengembalian()
     {
-        Peminjaman::where('status', 'dipinjam')
-            ->whereDate('tgl_kembali_plan', '<', now()->toDateString())
-            ->update(['status' => 'telat']);
-
         $peminjamans = Peminjaman::with(['user', 'detailPinjam.alat', 'pengembalian'])
             ->whereIn('status', ['dipinjam', 'telat'])
             ->latest()

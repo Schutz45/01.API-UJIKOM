@@ -19,6 +19,35 @@ class Peminjaman extends Model
         'permintaan_pengembalian',
     ];
 
+    /**
+     * Virtual Status: Menghitung status 'telat' secara dinamis.
+     * Status di DB tetap 'dipinjam', tapi secara tampilan/logic bisnis dianggap 'telat'.
+     */
+    public function getStatusAttribute($value)
+    {
+        if ($value === 'dipinjam' && $this->tgl_kembali_plan && $this->tgl_kembali_plan->isPast() && !$this->tgl_kembali_plan->isToday()) {
+            return 'telat';
+        }
+        return $value;
+    }
+
+    /**
+     * Scope untuk peminjaman yang sedang berjalan (dipinjam ATAU telat secara dinamis)
+     */
+    public function scopeAktif($query)
+    {
+        return $query->where('status', 'dipinjam');
+    }
+
+    /**
+     * Scope khusus untuk yang sudah melewati tanggal kembali
+     */
+    public function scopeTelat($query)
+    {
+        return $query->where('status', 'dipinjam')
+                     ->whereDate('tgl_kembali_plan', '<', now()->toDateString());
+    }
+
     protected function casts(): array {
         return [
             'tgl_pinjam' => 'date:Y-m-d',
@@ -45,13 +74,13 @@ class Peminjaman extends Model
     {
         $allowedTransitions = [
             'diajukan'     => ['dipinjam', 'ditolak'],
-            'dipinjam'     => ['telat', 'dikembalikan'],
+            'dipinjam'     => ['dikembalikan'],
             'telat'        => ['dikembalikan'],
             'dikembalikan' => [], // Status terminal - terkunci permanen
             'ditolak'      => [], // Status terminal - terkunci permanen
         ];
 
-        $currentStatus = $this->status;
+        $currentStatus = $this->status; // Menggunakan accessor getStatusAttribute
 
         // Mencegah perubahan jika status sudah sama (cegah eksekusi ulang)
         if ($currentStatus === $targetStatus) {

@@ -68,7 +68,6 @@ class AlatController extends Controller
 
         // Stok & stok_rusak tidak boleh diubah melalui endpoint update ini.
         // Perubahan unit hanya melalui endpoint tandai-rusak / perbaiki.
-        unset($data['stok'], $data['stok_rusak']);
 
         DB::transaction(function () use ($request, &$data, $alat, $oldGambar){
             if ($request->hasFile('gambar')) {
@@ -124,25 +123,25 @@ class AlatController extends Controller
      */
     public function tandaiRusak(Request $request, Alat $alat): JsonResponse
     {
-        $validated = $request->validate([
-            'jumlah'    =>  ['required', 'integer', 'min:1', "max:{$alat->stok}"],
+        // Validasi stok
+        $request->validate([
+            'jumlah'    =>  ['required', 'integer', 'min:1', "max:{$alat->jumlah_tersedia}"],
         ], [
             'jumlah.required'  => 'Jumlah unit yang ditandai rusak wajib diisi.',
             'jumlah.min'       => 'Minimal 1 unit harus ditandai rusak.',
-            'jumlah.max'       => "Jumlah melebihi stok baik yang tersedia ({$alat->stok} unit).",
+            'jumlah.max'       => "Jumlah melebihi stok baik yang tersedia ({$alat->jumlah_tersedia} unit).",
         ]);
 
-        DB::transaction(function () use ($alat, $validated) {
-            $alat->fill([
-                'stok'          => $alat->stok - $validated['jumlah'],
-                'stok_rusak'    => $alat->stok_rusak + $validated['jumlah'],
-            ])->save();
-        });
+        try {
+            $alat->markUnitsAsBroken((int)$request->jumlah);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
 
         $alat->refresh();
 
         return response()->json([
-            'message'   =>  "Berhasil menandai {$validated['jumlah']} unit '{$alat->nama_alat}' sebagai rusak.",
+            'message'   =>  "Berhasil menandai {$request->jumlah} unit '{$alat->nama_alat}' sebagai rusak.",
             'data'      =>  new AlatResource($alat->load('kategori'))
         ]);
     }
@@ -153,25 +152,25 @@ class AlatController extends Controller
      */
     public function perbaiki(Request $request, Alat $alat): JsonResponse
     {
-        $validated = $request->validate([
-            'jumlah'    =>  ['required', 'integer', 'min:1', "max:{$alat->stok_rusak}"],
+        // Validasi
+        $request->validate([
+            'jumlah'    =>  ['required', 'integer', 'min:1', "max:{$alat->jumlah_rusak}"],
         ], [
             'jumlah.required'  => 'Jumlah unit yang diperbaiki wajib diisi.',
             'jumlah.min'       => 'Minimal 1 unit harus diperbaiki.',
-            'jumlah.max'       => "Jumlah melebihi stok rusak yang tersedia ({$alat->stok_rusak} unit).",
+            'jumlah.max'       => "Jumlah melebihi stok rusak yang tersedia ({$alat->jumlah_rusak} unit).",
         ]);
 
-        DB::transaction(function () use ($alat, $validated) {
-            $alat->fill([
-                'stok_rusak'    => $alat->stok_rusak - $validated['jumlah'],
-                'stok'          => $alat->stok + $validated['jumlah'],
-            ])->save();
-        });
+        try {
+            $alat->repairUnits((int)$request->jumlah);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
 
         $alat->refresh();
 
         return response()->json([
-            'message'   =>  "Berhasil memperbaiki {$validated['jumlah']} unit '{$alat->nama_alat}'.",
+            'message'   =>  "Berhasil memperbaiki {$request->jumlah} unit '{$alat->nama_alat}'.",
             'data'      =>  new AlatResource($alat->load('kategori'))
         ]);
     }

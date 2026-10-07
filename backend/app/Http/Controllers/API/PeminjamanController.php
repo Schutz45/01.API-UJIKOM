@@ -185,14 +185,23 @@ class PeminjamanController extends Controller
                 $peminjaman->update(['status' => 'dipinjam']);
 
                 foreach ($peminjaman->detailPinjam as $detail) {
-                    // Mengunci baris alat demi validasi final sebelum stok dikurangi
                     $alat = Alat::lockForUpdate()->findOrFail($detail->alat_id);
-                    if ($alat->stok < $detail->jumlah) {
-                        throw new Exception("Persetujuan gagal. Stok alat '{$alat->nama_alat}' tidak mencukupi.");
+
+                    // Alokasikan unit tersedia sejumlah yang diminta
+                    $units = $alat->unitAlat()
+                        ->where('status', 'tersedia')
+                        ->orderBy('nomor_seri')
+                        ->take($detail->jumlah)
+                        ->get();
+
+                    if ($units->count() < $detail->jumlah) {
+                        throw new Exception("Persetujuan gagal. Unit alat '{$alat->nama_alat}' tidak mencukupi.");
                     }
 
-                    $alat->decrement('stok', $detail->jumlah);
-                    $alat->syncStatusKondisi();
+                    foreach ($units as $unit) {
+                        $unit->update(['status' => 'dipinjam']);
+                        $detail->unitAlat()->attach($unit->id, ['kondisi_keluar' => $unit->kondisi]);
+                    }
                 }
             });
 

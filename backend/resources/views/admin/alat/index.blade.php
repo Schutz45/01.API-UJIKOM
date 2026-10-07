@@ -116,6 +116,7 @@
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Nama Alat</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Kategori</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Stok</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Unit</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Kondisi</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Aksi</th>
                     </tr>
@@ -147,6 +148,15 @@
 
                         <td class="py-3 px-4 border-b font-semibold whitespace-nowrap">
                             {{ $alat->stok }}
+                        </td>
+
+                        <td class="py-3 px-4 border-b whitespace-nowrap">
+                            <button type="button"
+                                onclick="showUnitModal('{{ $alat->nama_alat }}', {{ json_encode($alat->unitAlat) }})"
+                                class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded bg-blue-50 text-blue-700 hover:bg-blue-100 transition border border-blue-200">
+                                <i class="bi bi-upc-scan"></i>
+                                <span>{{ $alat->unitAlat->count() }} Unit</span>
+                            </button>
                         </td>
 
                         <td class="py-3 px-4 border-b whitespace-nowrap">
@@ -200,8 +210,81 @@
             </table>
         </div>
 
-        <div class="p-4 border-t border-gray-200 bg-gray-50">
-            {{ $alats->links() }}
+    </div>
+
+    {{-- Modal Daftar Unit Alat --}}
+    <div id="unitListModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" aria-hidden="true" onclick="closeUnitModal()"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-2xl shadow-xl sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-gray-200">
+                <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4 flex justify-between items-center">
+                    <div>
+                        <h3 class="text-lg font-bold text-white" id="modal-alat-title">Daftar Unit Alat</h3>
+                        <p class="text-xs text-blue-100" id="modal-alat-subtitle">Daftar nomor seri dan status fisik unit</p>
+                    </div>
+                    <button type="button" onclick="closeUnitModal()" class="text-white hover:text-gray-200 transition"><i class="bi bi-x-lg"></i></button>
+                </div>
+                <div class="p-6 bg-white max-h-96 overflow-y-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-gray-50 border-b text-gray-500 text-xs uppercase">
+                                <th class="py-2 px-3">No. Seri</th>
+                                <th class="py-2 px-3">Status</th>
+                                <th class="py-2 px-3">Kondisi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="unit-table-body" class="divide-y divide-gray-100 text-gray-700">
+                            <!-- JS will inject rows here -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="bg-gray-50 px-6 py-4 flex justify-end">
+                    <button type="button" onclick="closeUnitModal()" class="px-5 py-2 text-sm font-bold text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition shadow-sm">Tutup</button>
+                </div>
+            </div>
         </div>
     </div>
+
+    <script>
+        function showUnitModal(namaAlat, units) {
+            document.getElementById('modal-alat-title').innerText = namaAlat;
+            document.getElementById('modal-alat-subtitle').innerText = 'Total ' + units.length + ' unit terdaftar';
+            
+            const tbody = document.getElementById('unit-table-body');
+            tbody.innerHTML = '';
+            
+            if (units.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-gray-400">Belum ada unit terdaftar.</td></tr>';
+            } else {
+                units.forEach(unit => {
+                    let statusBadge = '';
+                    if (unit.status === 'tersedia') statusBadge = '<span class="px-2 py-0.5 rounded text-xs bg-green-100 text-green-700 font-semibold">Tersedia</span>';
+                    else if (unit.status === 'dipinjam') statusBadge = '<span class="px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-700 font-semibold">Dipinjam</span>';
+                    else statusBadge = '<span class="px-2 py-0.5 rounded text-xs bg-red-100 text-red-700 font-semibold">' + unit.status + '</span>';
+
+                    let kondisiBadge = unit.kondisi === 'baik' 
+                        ? '<span class="text-green-600 font-medium"><i class="bi bi-check-circle-fill mr-1"></i>Baik</span>'
+                        : '<span class="text-red-600 font-medium"><i class="bi bi-x-circle-fill mr-1"></i>Rusak</span>';
+
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-gray-50 transition';
+                    tr.innerHTML = `
+                        <td class="py-2.5 px-3 font-mono font-bold text-gray-800">${unit.nomor_seri}</td>
+                        <td class="py-2.5 px-3">${statusBadge}</td>
+                        <td class="py-2.5 px-3">${kondisiBadge}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+            
+            document.getElementById('unitListModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeUnitModal() {
+            document.getElementById('unitListModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+    </script>
 @endsection

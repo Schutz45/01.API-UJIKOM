@@ -355,22 +355,21 @@
             </div>
 
             {{-- Logout --}}
-            <form action="{{ route('logout') }}" method="POST">
+            <button type="button" onclick="openLogoutModal()"
+                class="flex items-center gap-2 px-3 py-2 rounded-lg
+                    text-sm font-medium text-gray-600
+                    hover:bg-red-50 hover:text-red-600
+                    transition">
+
+                <i class="bi bi-box-arrow-right"></i>
+
+                <span class="hidden sm:inline">
+                    Logout
+                </span>
+
+            </button>
+            <form id="logout-form" action="{{ route('logout') }}" method="POST" class="hidden">
                 @csrf
-
-                <button type="submit"
-                    class="flex items-center gap-2 px-3 py-2 rounded-lg
-                        text-sm font-medium text-gray-600
-                        hover:bg-red-50 hover:text-red-600
-                        transition">
-
-                    <i class="bi bi-box-arrow-right"></i>
-
-                    <span class="hidden sm:inline">
-                        Logout
-                    </span>
-
-                </button>
             </form>
 
         </div>
@@ -648,5 +647,60 @@
 
 </script>
     
+    {{-- Modal Konfirmasi Logout --}}
+    <div id="logoutModal" class="fixed inset-0 z-[9999] hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            {{-- Overlay --}}
+            <div class="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-50 backdrop-blur-sm" aria-hidden="true" onclick="closeLogoutModal()"></div>
+
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div class="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-2xl shadow-2xl sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-gray-100">
+                <div class="p-6">
+                    <div class="flex items-start gap-4">
+                        <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                            <i class="bi bi-box-arrow-right text-2xl text-red-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-xl font-bold text-gray-900" id="modal-title">
+                                Konfirmasi Logout
+                            </h3>
+                            <p class="text-sm text-gray-500 mt-2 leading-relaxed">
+                                Apakah Anda yakin ingin keluar dari sistem? Anda harus login kembali untuk mengakses data peminjaman.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 flex flex-col sm:flex-row gap-3">
+                        <button type="button" onclick="closeLogoutModal()"
+                            class="flex-1 px-4 py-2.5 text-sm font-bold text-gray-700 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition shadow-sm">
+                            Batal
+                        </button>
+                        <button type="button" onclick="document.getElementById('logout-form').submit()"
+                            class="flex-1 px-4 py-2.5 text-sm font-bold text-white bg-red-600 rounded-xl hover:bg-red-700 transition shadow-sm">
+                            Ya, Keluar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openLogoutModal() {
+            document.getElementById('logoutModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLogoutModal() {
+            document.getElementById('logoutModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Close on ESC
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeLogoutModal();
+        });
+    </script>
 </body>
 </html>

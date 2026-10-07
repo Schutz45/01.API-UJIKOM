@@ -89,24 +89,29 @@
                 <tr class="border-b border-gray-200 text-left">
                     <th class="py-3 pr-4 font-semibold text-gray-600">Alat</th>
                     <th class="py-3 pr-4 font-semibold text-gray-600">Jumlah</th>
-                    <th class="py-3 font-semibold text-gray-600 text-center kol-rusak hidden">Jumlah Rusak</th>
+                    <th class="py-3 font-semibold text-gray-600">Pilih Unit Rusak</th>
                 </tr>
             </thead>
 
             <tbody>
                 @foreach ($peminjaman->detailPinjam as $detail)
+                    @php
+                        $unitsJson = $detail->unitAlat->map(fn($u) => ['id' => $u->id, 'nomor_seri' => $u->nomor_seri])->values();
+                    @endphp
                     <tr class="border-b border-gray-100">
-                        <td class="py-3 pr-4 text-gray-800">{{ $detail->alat->nama_alat }}</td>
+                        <td class="py-3 pr-4 text-gray-800 font-medium">{{ $detail->alat->nama_alat }}</td>
                         <td class="py-3 pr-4 text-gray-800">{{ $detail->jumlah }}</td>
-                        <td class="py-3 text-center kol-rusak hidden">
-                            <input
-                                type="number"
-                                name="jumlah_rusak[{{ $detail->alat_id }}]"
-                                min="0"
-                                max="{{ $detail->jumlah }}"
-                                class="w-24 border border-gray-300 rounded px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500"
-                                placeholder="0"
-                            >
+                        <td class="py-3">
+                            <button type="button"
+                                data-alat="{{ $detail->alat_id }}"
+                                data-nama="{{ $detail->alat->nama_alat }}"
+                                data-units="{{ json_encode($unitsJson) }}"
+                                onclick="openUnitRusakModal(this)"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-50 text-red-700 hover:bg-red-100 transition border border-red-200">
+                                <i class="bi bi-upc-scan"></i>
+                                Pilih Unit
+                            </button>
+                            <p id="summary-{{ $detail->alat_id }}" class="text-[11px] text-gray-500 mt-1.5">Semua unit baik</p>
                         </td>
                     </tr>
                 @endforeach
@@ -147,29 +152,7 @@
         </div>
 
         {{-- Kondisi Kembali --}}
-        <div class="mb-5">
-            <label
-                for="kondisi_kembali"
-                class="block text-sm font-semibold text-gray-700 mb-2"
-            >
-                Kondisi Alat Saat Dikembalikan
-            </label>
-
-            <select
-                id="kondisi_kembali"
-                name="kondisi_kembali"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                required
-            >
-                <option value="">-- Pilih Kondisi --</option>
-                <option value="baik" {{ old('kondisi_kembali') === 'baik' ? 'selected' : '' }}>
-                    Baik
-                </option>
-                <option value="rusak" {{ old('kondisi_kembali') === 'rusak' ? 'selected' : '' }}>
-                    Rusak
-                </option>
-            </select>
-        </div>
+        <input type="hidden" name="kondisi_kembali" value="rusak">
 
         {{-- Denda Kerusakan --}}
         <div class="mb-5">
@@ -177,7 +160,7 @@
                 for="denda_kerusakan"
                 class="block text-sm font-semibold text-gray-700 mb-2"
             >
-                Denda Kerusakan
+                Total Denda Kerusakan
             </label>
 
             <input
@@ -187,16 +170,11 @@
                 value="{{ old('denda_kerusakan', 0) }}"
                 min="0"
                 step="1000"
-                disabled
                 class="w-full border border-gray-300 rounded-lg px-3 py-2
-                focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-                disabled:bg-gray-100 disabled:text-gray-400"
+                focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Masukkan nominal denda kerusakan"
+                required
             >
-
-            <p class="text-xs text-gray-500 mt-1">
-                Isi nominal jika alat dikembalikan dalam kondisi rusak.
-            </p>
         </div>
 
         {{-- Informasi Denda Keterlambatan --}}
@@ -255,69 +233,153 @@
 </div>
 
 <script>
-    const kondisiKembali = document.getElementById('kondisi_kembali');
-    const dendaKerusakanInput = document.getElementById('denda_kerusakan');
-    const kolRusak = document.querySelectorAll('.kol-rusak');
-    const tglKembaliInput = document.getElementById('tgl_kembali');
+const dendaKerusakanInput = document.getElementById('denda_kerusakan');
+const tglKembaliInput = document.getElementById('tgl_kembali');
     
-    // Data dari backend
-    const tglRencanaKembali = new Date("{{ $peminjaman->tgl_kembali_plan?->format('Y-m-d') }}");
+// Data dari backend
+const tglRencanaKembali = new Date("{{ $peminjaman->tgl_kembali_plan?->format('Y-m-d') }}");
     
-    // Elemen label hasil perhitungan
-    const labelHariTelat = document.getElementById('label_hari_telat');
-    const labelDendaTelat = document.getElementById('label_denda_telat');
-    const rowDendaRusak = document.getElementById('row_denda_rusak');
-    const labelDendaRusak = document.getElementById('label_denda_rusak');
-    const labelTotalDenda = document.getElementById('label_total_denda');
+// Elemen label hasil perhitungan
+const labelHariTelat = document.getElementById('label_hari_telat');
+const labelDendaTelat = document.getElementById('label_denda_telat');
+const rowDendaRusak = document.getElementById('row_denda_rusak');
+const labelDendaRusak = document.getElementById('label_denda_rusak');
+const labelTotalDenda = document.getElementById('label_total_denda');
 
-    function formatRupiah(number) {
-        return 'Rp' + number.toLocaleString('id-ID');
-    }
+function formatRupiah(number) {
+    return 'Rp' + number.toLocaleString('id-ID');
+}
 
-    function calculateDenda() {
-        // 1. Hitung Keterlambatan
-        const tglKembali = new Date(tglKembaliInput.value);
-        let diffTime = tglKembali - tglRencanaKembali;
-        let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        let hariTelat = diffDays > 0 ? diffDays : 0;
-        let dendaTelat = hariTelat * 1000;
+function calculateDenda() {
+    // 1. Hitung Keterlambatan
+    const tglKembali = new Date(tglKembaliInput.value);
+    let diffTime = tglKembali - tglRencanaKembali;
+    let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    let hariTelat = diffDays > 0 ? diffDays : 0;
+    let dendaTelat = hariTelat * 1000;
 
-        // 2. Hitung Kerusakan
-        let dendaKerusakan = parseInt(dendaKerusakanInput.value) || 0;
+    // 2. Hitung Kerusakan
+    let dendaKerusakan = parseInt(dendaKerusakanInput.value) || 0;
 
-        // 3. Update Label
-        labelHariTelat.innerText = `${hariTelat} hari`;
-        labelDendaTelat.innerText = formatRupiah(dendaTelat);
+    // 3. Update Label
+    labelHariTelat.innerText = `${hariTelat} hari`;
+    labelDendaTelat.innerText = formatRupiah(dendaTelat);
         
-        if (kondisiKembali.value === 'rusak') {
-            rowDendaRusak.classList.remove('hidden');
-            labelDendaRusak.innerText = formatRupiah(dendaKerusakan);
-        } else {
-            rowDendaRusak.classList.add('hidden');
-            dendaKerusakan = 0; // Reset kalau kondisi baik
-        }
+    rowDendaRusak.classList.remove('hidden');
+    labelDendaRusak.innerText = formatRupiah(dendaKerusakan);
 
-        labelTotalDenda.innerText = formatRupiah(dendaTelat + dendaKerusakan);
-    }
+    labelTotalDenda.innerText = formatRupiah(dendaTelat + dendaKerusakan);
+}
 
-    function updateKondisi() {
-        if (kondisiKembali.value === 'rusak') {
-            dendaKerusakanInput.disabled = false;
-            kolRusak.forEach(el => el.classList.remove('hidden'));
-        } else {
-            dendaKerusakanInput.disabled = true;
-            dendaKerusakanInput.value = 0;
-            kolRusak.forEach(el => el.classList.add('hidden'));
-        }
-        calculateDenda();
-    }
+dendaKerusakanInput.addEventListener('input', calculateDenda);
+tglKembaliInput.addEventListener('change', calculateDenda);
 
-    kondisiKembali.addEventListener('change', updateKondisi);
-    dendaKerusakanInput.addEventListener('input', calculateDenda);
-    tglKembaliInput.addEventListener('change', calculateDenda);
-
-    // Initial run
-    updateKondisi();
+// Initial run
+calculateDenda();
 </script>
 
+    {{-- Wadah hidden untuk input unit_rusak (dipindahkan dari modal ke form) --}}
+    <div id="unitRusakHidden" class="hidden"></div>
+
+    {{-- Modal Pemilihan Unit Rusak --}}
+    <div id="unitRusakModal" class="fixed inset-0 z-[9999] hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-50 backdrop-blur-sm" aria-hidden="true" onclick="closeUnitRusakModal()"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-2xl shadow-2xl sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-gray-100">
+                <div class="bg-gradient-to-r from-red-600 to-rose-700 px-6 py-4 flex justify-between items-center">
+                    <div>
+                        <h3 class="text-lg font-bold text-white" id="modal-unit-title">Pilih Unit Rusak</h3>
+                        <p class="text-xs text-red-100" id="modal-unit-subtitle">Centang nomor seri yang kembalinya rusak</p>
+                    </div>
+                    <button type="button" onclick="closeUnitRusakModal()" class="text-white hover:text-gray-200 transition"><i class="bi bi-x-lg"></i></button>
+                </div>
+                <div class="p-6 max-h-96 overflow-y-auto">
+                    <div id="unitRusakList" class="grid grid-cols-2 gap-3"></div>
+                </div>
+                <div class="bg-gray-50 px-6 py-4 flex justify-end">
+                    <button type="button" onclick="closeUnitRusakModal()" class="px-5 py-2 text-sm font-bold text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition shadow-sm">Selesai</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentAlatId = null;
+
+        function openUnitRusakModal(btn) {
+            if (btn.disabled) return;
+            currentAlatId = btn.dataset.alat;
+            const namaAlat = btn.dataset.nama;
+            let units = [];
+            try { units = JSON.parse(btn.dataset.units); } catch(e) { units = []; }
+
+            document.getElementById('modal-unit-title').innerText = namaAlat;
+            document.getElementById('modal-unit-subtitle').innerText = units.length + ' unit dipinjam — centang yang rusak';
+
+            const container = document.getElementById('unitRusakList');
+            container.innerHTML = '';
+
+            if (units.length === 0) {
+                container.innerHTML = '<p class="col-span-2 text-center text-gray-400 py-4 text-sm">Tidak ada unit teralokasi.</p>';
+            } else {
+                units.forEach(unit => {
+                    const existing = document.querySelector(`#unitRusakHidden input[name="unit_rusak[${currentAlatId}][]"][value="${unit.id}"]`);
+                    const checked = existing ? 'checked' : '';
+
+                    const label = document.createElement('label');
+                    label.className = 'inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 text-sm font-mono cursor-pointer hover:bg-red-50 hover:border-red-200 transition has-[:checked]:bg-red-50 has-[:checked]:border-red-500 has-[:checked]:text-red-700';
+                    label.innerHTML = `
+                        <input type="checkbox" value="${unit.id}" ${checked}
+                            class="rounded text-red-600 focus:ring-red-500 border-gray-300 w-4 h-4"
+                            onchange="toggleUnitRusak(this)">
+                        <span>${unit.nomor_seri}</span>
+                    `;
+                    container.appendChild(label);
+                });
+            }
+
+            document.getElementById('unitRusakModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function toggleUnitRusak(checkbox) {
+            const container = document.getElementById('unitRusakHidden');
+            const alatId = currentAlatId;
+
+            if (checkbox.checked) {
+                const input = document.createElement('input');
+                input.type = 'checkbox';
+                input.name = `unit_rusak[${alatId}][]`;
+                input.value = checkbox.value;
+                input.checked = true;
+                input.style.display = 'none';
+                container.appendChild(input);
+            } else {
+                const existing = container.querySelector(`input[name="unit_rusak[${alatId}][]"][value="${checkbox.value}"]`);
+                if (existing) existing.remove();
+            }
+
+            updateSummary(alatId);
+        }
+
+        function updateSummary(alatId) {
+            const selected = document.querySelectorAll(`#unitRusakHidden input[name="unit_rusak[${alatId}][]"]:checked`);
+            const summary = document.getElementById('summary-' + alatId);
+            if (summary) {
+                summary.innerHTML = selected.length > 0
+                    ? `<b class="text-red-600">${selected.length} unit rusak</b>`
+                    : 'Belum ada unit dipilih';
+            }
+        }
+
+        function closeUnitRusakModal() {
+            document.getElementById('unitRusakModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeUnitRusakModal();
+        });
+    </script>
 @endsection

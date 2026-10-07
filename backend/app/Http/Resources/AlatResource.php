@@ -17,8 +17,8 @@ class AlatResource extends JsonResource
         return [
             'id'                =>  $this->id,
             'nama_alat'         =>  $this->nama_alat,
-            'stok'              =>  $this->stok,
-            'stok_rusak'        =>  $this->stok_rusak,
+            'jumlah_tersedia'   =>  $this->jumlah_tersedia,
+            'jumlah_rusak'      =>  $this->jumlah_rusak,
             'status_kondisi'    =>  $this->status_kondisi,
             'deskripsi'         =>  $this->deskripsi,
             'gambar'            =>  $this->gambar ? url('storage/'  .   $this->gambar)  : null,

@@ -14,7 +14,7 @@ class PeminjamController extends Controller
     public function katalogAlat()
     {
         $alats  =   Alat::with('kategori')
-            ->where('stok', '>', 0)
+            ->tersedia()
             ->get();
 
         return view('peminjam.katalog', compact('alats'));
@@ -88,7 +88,7 @@ class PeminjamController extends Controller
     // Melihat riwayat peminjaman user yang sedang login
     public function riwayatPeminjaman()
     {
-        $peminjamans    =   Peminjaman::with('detailPinjam.alat')
+        $peminjamans    =   Peminjaman::with(['detailPinjam.alat', 'detailPinjam.unitAlat'])
             ->where('user_id', auth()->id())
             ->latest()
             ->get();

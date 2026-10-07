@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 class Alat extends Model
 {
@@ -13,14 +14,12 @@ class Alat extends Model
     protected $fillable = [
         'kategori_id',
         'nama_alat',
-        'stok',
-        'stok_rusak',
         'deskripsi',
         'gambar'
     ];
 
     protected function casts(): array {
-        return ['stok' => 'integer', 'stok_rusak' => 'integer',];
+        return [];
     }
 
     public function kategori(): BelongsTo {
@@ -31,23 +30,88 @@ class Alat extends Model
         return $this->hasMany(DetailPinjam::class);
     }
 
+    public function unitAlat(): \Illuminate\Database\Eloquent\Relations\HasMany {
+        return $this->hasMany(UnitAlat::class);
+    }
+
     /**
-     * KATALOG PEMINJAM: alat masih bisa dipinjam selama stok tersedia > 0,
-     * meskipun sebagian unit rusak.
+     * Menandai sejumlah unit alat tersedia sebagai rusak.
+     */
+    public function markUnitsAsBroken(int $jumlah): void
+    {
+        DB::transaction(function () use ($jumlah) {
+            $units = $this->unitAlat()
+                ->where('status', 'tersedia')
+                ->lockForUpdate()
+                ->orderBy('nomor_seri')
+                ->take($jumlah)
+                ->get();
+
+            if ($units->count() < $jumlah) {
+                throw new \Exception("Jumlah unit tersedia tidak mencukupi.");
+            }
+
+            foreach ($units as $unit) {
+                $unit->update(['status' => 'rusak', 'kondisi' => 'rusak']);
+            }
+        });
+    }
+
+    /**
+     * Memperbaiki sejumlah unit alat yang rusak.
+     */
+    public function repairUnits(int $jumlah): void
+    {
+        DB::transaction(function () use ($jumlah) {
+            $units = $this->unitAlat()
+                ->where('kondisi', 'rusak')
+                ->lockForUpdate()
+                ->orderBy('nomor_seri')
+                ->take($jumlah)
+                ->get();
+
+            if ($units->count() < $jumlah) {
+                throw new \Exception("Jumlah unit rusak tidak mencukupi.");
+            }
+
+            foreach ($units as $unit) {
+                $unit->update(['status' => 'tersedia', 'kondisi' => 'baik']);
+            }
+        });
+    }
+
+    // Accessor Computed Stok (Ganti nama agar tidak konflik dengan kolom)
+    public function getJumlahTersediaAttribute(): int {
+        return $this->unitAlat()->where('status', 'tersedia')->count();
+    }
+
+    // Accessor Computed Stok Rusak
+    public function getJumlahRusakAttribute(): int {
+        return $this->unitAlat()->where('kondisi', 'rusak')->count();
+    }
+
+    /**
+     * KATALOG PEMINJAM: alat masih bisa dipinjam selama unit tersedia > 0
      */
     public function scopeTersedia($query) {
-        return $query->where('stok', '>', 0);
+        return $query->whereHas('unitAlat', function($q) {
+            $q->where('status', 'tersedia');
+        });
     }
 
     public function scopeRusak($query) {
-        return $query->where('stok_rusak', '>', 0);
+        return $query->whereHas('unitAlat', function($q) {
+            $q->where('kondisi', 'rusak');
+        });
     }
 
     /**
      * Alat yang membutuhkan perhatian admin: ada unit rusak.
      */
     public function scopePerluPerhatian($query) {
-        return $query->where('stok_rusak', '>', 0);
+        return $query->whereHas('unitAlat', function($q) {
+            $q->where('kondisi', 'rusak');
+        });
     }
 
     /**
@@ -61,13 +125,16 @@ class Alat extends Model
      */
     public function getStatusKondisiAttribute(): string
     {
-        if ($this->stok > 0 && $this->stok_rusak > 0) {
+        $tersedia = $this->jumlah_tersedia;
+        $rusak = $this->jumlah_rusak;
+
+        if ($tersedia > 0 && $rusak > 0) {
             return 'sebagian_rusak';
         }
-        if ($this->stok > 0) {
+        if ($tersedia > 0) {
             return 'baik';
         }
-        if ($this->stok_rusak > 0) {
+        if ($rusak > 0) {
             return 'rusak';
         }
         return 'habis';
@@ -86,13 +153,12 @@ class Alat extends Model
         };
     }
 
-    /**
-     * Sinkronisasi kolom status_kondisi di database agar konsisten
-     * dengan nilai computed. Dipanggil setelah setiap perubahan stok.
-     */
-    public function syncStatusKondisi(): void
-    {
-        $this->status_kondisi = $this->status_kondisi;
-        $this->saveQuietly();
+    // Helper backward compatibility
+    public function getStokAttribute(): int {
+        return $this->jumlah_tersedia;
+    }
+
+    public function getStokRusakAttribute(): int {
+        return $this->jumlah_rusak;
     }
 }
