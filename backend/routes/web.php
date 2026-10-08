@@ -32,6 +32,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('/users',           [AdminController::class, 'storeUser'])      ->name('user.store');
     Route::get('/users/{id}/edit',  [AdminController::class, 'editUser'])       ->name('user.edit');
     Route::put('/users/{id}',       [AdminController::class, 'updateUser'])     ->name('user.update');
+    Route::put('/users/{id}/status', [AdminController::class, 'toggleStatusUser'])->name('user.status');
     Route::delete('/users/{id}',    [AdminController::class, 'destroyUser'])    ->name('user.destroy');
 
     // CRUD Kategori

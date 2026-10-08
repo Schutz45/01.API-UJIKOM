@@ -12,6 +12,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Logout paksa jika akun yang sedang login sudah dinonaktifkan admin lain
+        $middleware->append(\App\Http\Middleware\CheckAccountStatus::class);
+
         $middleware->alias([
             'role'      =>  \App\Http\Middleware\CheckRole::class,
             'admin'     =>  \App\Http\Middleware\CheckRole::class . ':admin',

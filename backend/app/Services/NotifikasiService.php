@@ -164,6 +164,28 @@ class NotifikasiService
 
     /*
     |----------------------------------------------------------------------
+    | PEMBERSIHAN NOTIFIKASI
+    |----------------------------------------------------------------------
+    */
+
+    /**
+     * Selesaikan notifikasi "Permintaan Pengembalian" untuk peminjaman tertentu.
+     *
+     * Dipanggil setelah pengembalian selesai diproses agar notifikasi yang
+     * sudah tidak relevan tidak menetap di lonceng petugas. Filter dilakukan
+     * berdasarkan referensi (tipe + id) dan judul, sehingga notifikasi lain
+     * (pengajuan, persetujuan, alat rusak, dll) tetap utuh.
+     */
+    public static function selesaikanPermintaanPengembalian(Peminjaman $peminjaman): void
+    {
+        Notifikasi::where('referensi_tipe', 'peminjaman')
+            ->where('referensi_id', $peminjaman->id)
+            ->where('judul', 'Permintaan Pengembalian')
+            ->delete();
+    }
+
+    /*
+    |----------------------------------------------------------------------
     | Helper: penerima notifikasi
     |----------------------------------------------------------------------
     */

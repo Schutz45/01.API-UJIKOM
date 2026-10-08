@@ -213,6 +213,9 @@ class PetugasController extends Controller
                 }
             }
 
+            // Selesaikan notifikasi "Permintaan Pengembalian" yang sudah tidak relevan
+            \App\Services\NotifikasiService::selesaikanPermintaanPengembalian($peminjaman);
+
             // Ubah status peminjaman
             $peminjaman->update([
                 'status' => 'dikembalikan',

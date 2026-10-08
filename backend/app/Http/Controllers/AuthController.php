@@ -49,9 +49,17 @@ class AuthController extends Controller
 
         // Cek email dan password
         if (Auth::attempt($credentials)) {
-            $request->session()->regenerate();
-
             $user = Auth::user();
+
+            // CEK STATUS AKUN
+            if (!$user->isAktif()) {
+                Auth::logout();
+                return back()
+                    ->withErrors(['login' => 'Akun Anda telah dinonaktifkan. Silakan hubungi admin.'])
+                    ->withInput();
+            }
+
+            $request->session()->regenerate();
 
             LogAktivitas::create([
                 'user_id' => $user->id,

@@ -545,6 +545,33 @@ class AdminController extends Controller
             ->with('success', 'Data user berhasil diperbarui.');
     }
 
+    /**
+     * Mengubah status akun user (aktif <-> nonaktif) tanpa menghapus data.
+     * Admin tidak boleh menonaktifkan akun yang sedang dia gunakan sendiri.
+     */
+    public function toggleStatusUser($id)
+    {
+        $user = User::findOrFail($id);
+
+        // Proteksi: tidak boleh menonaktifkan akun sendiri
+        if (auth()->id() === $user->id) {
+            return redirect()
+                ->back()
+                ->with('error', 'Anda tidak dapat menonaktifkan akun Anda sendiri.');
+        }
+
+        $user->status_akun = $user->isAktif() ? 'nonaktif' : 'aktif';
+        $user->save();
+
+        $pesan = $user->isAktif()
+            ? "Akun \"{$user->name}\" berhasil diaktifkan kembali."
+            : "Akun \"{$user->name}\" berhasil dinonaktifkan.";
+
+        return redirect()
+            ->route('admin.user.index')
+            ->with('success', $pesan);
+    }
+
     public function destroyUser($id)
     {
         $user = User::findOrFail($id);
@@ -1050,10 +1077,13 @@ class AdminController extends Controller
                 }
             }
 
+            // Selesaikan notifikasi "Permintaan Pengembalian" yang sudah tidak relevan
+            \App\Services\NotifikasiService::selesaikanPermintaanPengembalian($peminjaman);
 
             // Ubah status peminjaman menjadi dikembalikan
             $peminjaman->update([
-                'status' => 'dikembalikan'
+                'status' => 'dikembalikan',
+                'permintaan_pengembalian' => false,
             ]);
 
             DB::commit();

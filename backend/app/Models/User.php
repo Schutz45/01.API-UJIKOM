@@ -21,6 +21,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'status_akun',
         'no_hp',
         'alamat',
         'foto_profile'
@@ -60,5 +61,15 @@ class User extends Authenticatable
     public function jumlahNotifikasiBelumDibaca(): int
     {
         return (int) $this->notifikasi()->where('dibaca', false)->count();
+    }
+
+    /*
+    |----------------------------------------------------------------------
+    | Helper: cek apakah akun aktif
+    |----------------------------------------------------------------------
+    */
+    public function isAktif(): bool
+    {
+        return $this->status_akun === 'aktif';
     }
 }

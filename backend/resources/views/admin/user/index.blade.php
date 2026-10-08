@@ -112,8 +112,9 @@
                     <tr class="bg-gray-100 text-gray-600 text-sm uppercase tracking-wider">
                         <th class="py-3 px-4 border-b whitespace-nowrap">Nama</th>
                         <th class="py-3 px-4 border-b whitespace-nowrap">Email</th>
-                        <th class="py-3 px-4 border-b whitespace-nowrap">Role / Hak Akses</th>
                         <th class="py-3 px-4 border-b whitespace-nowrap">No. HP</th>
+                        <th class="py-3 px-4 border-b whitespace-nowrap">Hak Akses</th>
+                        <th class="py-3 px-4 border-b whitespace-nowrap">Status Akun</th>
                         <th class="py-3 px-4 border-b whitespace-nowrap">Aksi</th>
                     </tr>
                 </thead>
@@ -157,6 +158,11 @@
                             </td>
 
                             <td class="py-3 px-4 border-b">
+                                {{ $user->no_hp ?? '-' }}
+                            </td>
+
+
+                            <td class="py-3 px-4 border-b">
 
                                 <span class="px-2.5 py-1 text-xs font-semibold rounded-full
                                     @if($user->role == 'admin')
@@ -173,8 +179,19 @@
 
                             </td>
 
+                            {{-- STATUS AKUN --}}
                             <td class="py-3 px-4 border-b">
-                                {{ $user->no_hp ?? '-' }}
+                                @if($user->isAktif())
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                        Aktif
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-200 text-gray-600">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                                        Nonaktif
+                                    </span>
+                                @endif
                             </td>
 
                             <td class="py-3 px-4 border-b">
@@ -203,6 +220,35 @@
 
                                     </form>
 
+                                    <!-- Tombol Aktifkan / Nonaktifkan -->
+                                    @if($user->id == auth()->id())
+                                        <span class="text-[10px] italic text-gray-400 px-2 py-1.5">
+                                            Akun Anda
+                                        </span>
+                                    @elseif($user->isAktif())
+                                        <form action="{{ route('admin.user.status', $user->id) }}"
+                                              method="POST"
+                                              onsubmit="return confirm('Yakin ingin menonaktifkan akun {{ $user->name }}? Akun ini tidak akan dapat login sementara.')">
+                                            @csrf
+                                            @method('PUT')
+                                            <button type="submit"
+                                                class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition">
+                                                Nonaktifkan
+                                            </button>
+                                        </form>
+                                    @else
+                                        <form action="{{ route('admin.user.status', $user->id) }}"
+                                              method="POST"
+                                              onsubmit="return confirm('Aktifkan kembali akun {{ $user->name }}?')">
+                                            @csrf
+                                            @method('PUT')
+                                            <button type="submit"
+                                                class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition">
+                                                Aktifkan
+                                            </button>
+                                        </form>
+                                    @endif
+
                                 </div>
 
                             </td>
@@ -212,7 +258,7 @@
                     @empty
 
                         <tr>
-                            <td colspan="5" class="py-4 text-center text-gray-500">
+                            <td colspan="6" class="py-4 text-center text-gray-500">
                                 Belum ada pengguna terdaftar.
                             </td>
                         </tr>
