@@ -32,7 +32,7 @@ class NotifikasiService
                 pesan: "{$namaPeminjam} mengajukan peminjaman baru (#{$peminjaman->id}). Menunggu persetujuan Anda.",
                 referensiTipe: 'peminjaman',
                 referensiId: $peminjaman->id,
-                urlTujuan: route('petugas.peminjaman.index')
+                urlTujuan: '/petugas/peminjaman'
             );
         }
     }
@@ -53,7 +53,7 @@ class NotifikasiService
                 pesan: "{$namaPeminjam} meminta pengembalian untuk peminjaman #{$peminjaman->id}. Menunggu pemeriksaan.",
                 referensiTipe: 'peminjaman',
                 referensiId: $peminjaman->id,
-                urlTujuan: route('petugas.pengembalian.index')
+                urlTujuan: '/petugas/pengembalian'
             );
         }
     }
@@ -76,7 +76,7 @@ class NotifikasiService
             pesan: "Pengajuan peminjaman #{$peminjaman->id} telah diterima dan sedang diperiksa.",
             referensiTipe: 'peminjaman',
             referensiId: $peminjaman->id,
-            urlTujuan: route('peminjam.riwayat')
+            urlTujuan: '/peminjam/riwayat'
         );
     }
 
@@ -92,7 +92,7 @@ class NotifikasiService
             pesan: "Peminjaman Anda (#{$peminjaman->id}) telah disetujui. Alat dapat diambil.",
             referensiTipe: 'peminjaman',
             referensiId: $peminjaman->id,
-            urlTujuan: route('peminjam.riwayat')
+            urlTujuan: '/peminjam/riwayat'
         );
     }
 
@@ -108,7 +108,7 @@ class NotifikasiService
             pesan: "Maaf, pengajuan peminjaman Anda (#{$peminjaman->id}) ditolak.",
             referensiTipe: 'peminjaman',
             referensiId: $peminjaman->id,
-            urlTujuan: route('peminjam.riwayat')
+            urlTujuan: '/peminjam/riwayat'
         );
     }
 
@@ -133,7 +133,7 @@ class NotifikasiService
             pesan: $pesan,
             referensiTipe: 'pengembalian',
             referensiId: $pengembalian->id,
-            urlTujuan: route('peminjam.riwayat')
+            urlTujuan: '/peminjam/riwayat'
         );
     }
 
@@ -157,7 +157,7 @@ class NotifikasiService
                 pesan: "'{$alat->nama_alat}' tercatat rusak sebanyak {$jumlahRusak} unit dan perlu ditangani.",
                 referensiTipe: 'alat',
                 referensiId: $alat->id,
-                urlTujuan: route('admin.alat.edit', $alat->id)
+                urlTujuan: '/admin/alat/' . $alat->id . '/edit'
             );
         }
     }
