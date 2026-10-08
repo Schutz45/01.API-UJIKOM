@@ -7,12 +7,6 @@
 
 <div class="max-w-4xl mx-auto">
 
-    @if (session('error'))
-        <div class="mb-6 bg-red-50 border border-red-200 text-red-700 rounded-lg p-4">
-            {{ session('error') }}
-        </div>
-    @endif
-
     <div class="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
 
         {{-- Header --}}

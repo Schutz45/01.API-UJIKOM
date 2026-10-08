@@ -4,18 +4,6 @@
 @section('header-title', 'Manajemen Data Alat')
 
 @section('content')
-    @if(session('success'))
-        <div class="mb-4 bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-lg shadow-sm text-sm">
-            {{ session('success') }}
-        </div>
-    @endif
-
-    @if(session('error'))
-        <div class="mb-4 bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg shadow-sm text-sm">
-            {{ session('error') }}
-        </div>
-    @endif
-
     <div class="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
         <div class="p-5 border-b border-gray-200 bg-gray-50">
 

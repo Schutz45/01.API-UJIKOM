@@ -238,7 +238,13 @@ class AdminController extends Controller
     // Menampilkan form edit alat
     public function editAlat($id)
     {
-        $alat       =   Alat::findOrFail($id);
+        $alat       =   Alat::with([
+            'kategori',
+            'unitAlat' => function ($query) {
+                $query->orderBy('nomor_seri');
+            }
+        ])->findOrFail($id);
+        
         $kategoris  =   Kategori::all();
         return view('admin.alat.edit', compact('alat', 'kategoris'));
     }
@@ -281,21 +287,16 @@ class AdminController extends Controller
     public function tandaiRusakAlat(Request $request, Alat $alat)
     {
         $request->validate([
-            'jumlah' => 'required|integer|min:1',
+            'unit_ids'   => 'required|array|min:1',
+            'unit_ids.*' => 'exists:unit_alat,id',
         ]);
 
-        $jumlah = (int) $request->jumlah;
-
-        if ($jumlah > $alat->jumlah_tersedia) {
-            return back()->with('error', 'Jumlah alat yang ditandai rusak tidak boleh melebihi unit tersedia.');
-        }
-
         try {
-            $alat->markUnitsAsBroken($jumlah);
+            $alat->markUnitsAsBroken($request->unit_ids);
 
             return redirect()
                 ->route('admin.alat.edit', $alat->id)
-                ->with('success', $jumlah . ' unit ' . $alat->nama_alat . ' berhasil ditandai rusak.');
+                ->with('success', count($request->unit_ids) . ' unit ' . $alat->nama_alat . ' berhasil ditandai rusak.');
 
         } catch (\Exception $e) {
             return back()
@@ -306,21 +307,16 @@ class AdminController extends Controller
     public function perbaikiAlat(Request $request, Alat $alat)
     {
         $request->validate([
-            'jumlah' => 'required|integer|min:1',
+            'unit_ids'   => 'required|array|min:1',
+            'unit_ids.*' => 'exists:unit_alat,id',
         ]);
 
-        $jumlah = (int) $request->jumlah;
-
-        if ($jumlah > $alat->jumlah_rusak) {
-            return back()->with('error', 'Jumlah alat yang diperbaiki tidak boleh melebihi unit rusak.');
-        }
-
         try {
-            $alat->repairUnits($jumlah);
+            $alat->repairUnits($request->unit_ids);
 
             return redirect()
                 ->route('admin.alat.edit', $alat->id)
-                ->with('success', $jumlah . ' unit ' . $alat->nama_alat . ' berhasil diperbaiki dan dikembalikan ke stok tersedia.');
+                ->with('success', count($request->unit_ids) . ' unit ' . $alat->nama_alat . ' berhasil diperbaiki dan dikembalikan ke stok tersedia.');
 
         } catch (\Exception $e) {
             return back()
@@ -355,13 +351,13 @@ class AdminController extends Controller
         | Jika masih ada unit rusak, proses perbaikan harus diselesaikan
         | terlebih dahulu melalui halaman Alat Rusak / Perbaikan.
         */
-        if ($alat->stok_rusak > 0) {
+        if ($alat->jumlah_rusak > 0) {
             return redirect()
                 ->route('admin.alat.index')
                 ->with(
                     'error',
                     'Alat tidak dapat dihapus karena masih memiliki '
-                    . $alat->stok_rusak
+                    . $alat->jumlah_rusak
                     . ' unit alat rusak. Silakan proses melalui halaman Alat Rusak / Perbaikan terlebih dahulu.'
                 );
         }
@@ -821,7 +817,7 @@ class AdminController extends Controller
         $peminjaman = Peminjaman::with('detailPinjam.alat')->findOrFail($id);
 
         $request->validate([
-            'status' => 'required|in:diajukan,dipinjam,dikembalikan',
+            'status' => 'required|in:diajukan,dipinjam',
         ]);
 
         DB::beginTransaction();
@@ -931,8 +927,8 @@ class AdminController extends Controller
     {
         $peminjaman = Peminjaman::with('detailPinjam.alat')->findOrFail($id);
 
-        // Pastikan hanya peminjaman yang sedang dipinjam/telat yang dapat diproses sebagai pengembalian.
-        if (!in_array($peminjaman->status, ['dipinjam', 'telat'])) {
+        // Guard alur pengembalian resmi: hanya peminjaman aktif & belum pernah dikembalikan.
+        if (!$peminjaman->canBeReturned()) {
             return redirect()
                 ->route('admin.peminjaman.index')
                 ->with('error', 'Peminjaman ini tidak dapat diproses sebagai pengembalian.');
@@ -940,11 +936,48 @@ class AdminController extends Controller
 
         $request->validate([
             'tgl_kembali'       => 'required|date',
-            'kondisi_kembali'   => 'required|in:baik,rusak',
-            'denda_kerusakan'   => 'required_if:kondisi_kembali,rusak|integer|min:0',
-            'unit_rusak'        => 'nullable|array',
-            'unit_rusak.*'      => 'nullable|integer',
+            'unit_kondisi'      => 'required|array',
+            'unit_kondisi.*'    => 'required|in:baik,rusak',
+            'denda_kerusakan'   => 'nullable|integer|min:0',
         ]);
+
+        // Pastikan semua unit yang dialokasikan pada peminjaman memiliki kondisi (SET exact match)
+        $unitTerdaftar = array_map(
+            'strval',
+            $peminjaman->detailPinjam
+                ->flatMap(fn($detail) => $detail->unitAlat->pluck('id'))
+                ->all()
+        );
+
+        $unitDikirim = array_map(
+            'strval',
+            array_keys($request->unit_kondisi)
+        );
+
+        sort($unitTerdaftar);
+        sort($unitDikirim);
+
+        if ($unitTerdaftar !== $unitDikirim) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'unit_kondisi' => 'Data unit yang dikembalikan tidak valid. Mohon pastikan semua unit yang dipinjam telah ditentukan kondisinya dengan benar.',
+                ]);
+        }
+
+        // Validasi Denda Kerusakan: wajib jika ada unit rusak, nol jika semua baik
+        if (in_array('rusak', $request->unit_kondisi, true)) {
+            if ($request->denda_kerusakan === null || (int)$request->denda_kerusakan < 1000) {
+                return back()
+                    ->withInput()
+                    ->withErrors([
+                        'denda_kerusakan' => 'Denda kerusakan wajib diisi minimal Rp1.000 jika ada unit yang rusak.',
+                    ]);
+            }
+            $dendaKerusakan = (int)$request->denda_kerusakan;
+        } else {
+            $dendaKerusakan = 0;
+        }
 
         // Pastikan tanggal kembali tidak sebelum tanggal pinjam
         if ($request->tgl_kembali < $peminjaman->tgl_pinjam->format('Y-m-d')) {
@@ -972,11 +1005,7 @@ class AdminController extends Controller
             $dendaKeterlambatan = $hariTelat * 1000;
 
             // Denda kerusakan dari input admin
-            $dendaKerusakan = 0;
-
-            if ($request->kondisi_kembali === 'rusak') {
-                $dendaKerusakan = (int) ($request->denda_kerusakan ?? 0);
-            }
+            $dendaKerusakan = (int) ($request->denda_kerusakan ?? 0);
 
             // Total denda
             $totalDenda = $dendaKeterlambatan + $dendaKerusakan;
@@ -985,7 +1014,7 @@ class AdminController extends Controller
             Pengembalian::create([
                 'peminjaman_id'       => $peminjaman->id,
                 'tgl_kembali'         => $request->tgl_kembali,
-                'kondisi_kembali'     => $request->kondisi_kembali,
+                'kondisi_kembali'     => in_array('rusak', $request->unit_kondisi) ? 'rusak' : 'baik',
                 'denda_keterlambatan' => $dendaKeterlambatan,
                 'denda_kerusakan'     => $dendaKerusakan,
                 'denda'               => $totalDenda,
@@ -998,12 +1027,13 @@ class AdminController extends Controller
                 
                 // Ambil unit yang dipinjam
                 $units = $detail->unitAlat;
-                $unitRusakIds = $request->unit_rusak[$detail->alat_id] ?? [];
 
                 $jmlRusak = 0;
                 // Update kondisi masing-masing unit
                 foreach ($units as $unit) {
-                    if (in_array($unit->id, $unitRusakIds)) {
+                    $kondisi = $request->unit_kondisi[$unit->id] ?? 'baik';
+                    
+                    if ($kondisi === 'rusak') {
                         $unit->update(['status' => 'rusak', 'kondisi' => 'rusak']);
                         $detail->unitAlat()->updateExistingPivot($unit->id, ['kondisi_masuk' => 'rusak']);
                         $jmlRusak++;
@@ -1019,6 +1049,7 @@ class AdminController extends Controller
                     \App\Services\NotifikasiService::alatRusakBaru($alat, $jmlRusak);
                 }
             }
+
 
             // Ubah status peminjaman menjadi dikembalikan
             $peminjaman->update([

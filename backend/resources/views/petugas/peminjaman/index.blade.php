@@ -5,23 +5,6 @@
 
 @section('content')
 
-    {{-- Alert Success --}}
-    @if(session('success'))
-        <div class="mb-4 bg-emerald-50 border border-emerald-200 text-emerald-800
-                    p-4 rounded-lg shadow-sm text-sm">
-            {{ session('success') }}
-        </div>
-    @endif
-
-    {{-- Alert Error --}}
-    @if(session('error'))
-        <div class="mb-4 bg-red-50 border border-red-800 text-red-800
-                    p-4 rounded-lg shadow-sm text-sm">
-            {{ session('error') }}
-        </div>
-    @endif
-
-
     {{-- Container --}}
     <div class="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
 
@@ -131,8 +114,6 @@
                                 <button type="button" 
                                     onclick="showUserModal({
                                         name: '{{ addslashes($item->user->name ?? 'User') }}',
-                                        nis: '{{ addslashes($item->user->nis ?? 'Belum diatur') }}',
-                                        kelas: '{{ addslashes($item->user->kelas ?? 'Belum diatur') }}',
                                         email: '{{ addslashes($item->user->email ?? '-') }}',
                                         no_hp: '{{ addslashes($item->user->no_hp ?? '-') }}',
                                         alamat: '{{ addslashes($item->user->alamat ?? '-') }}',
@@ -274,17 +255,7 @@
                     <img id="modal-foto" src="" alt="Profile" class="w-24 h-24 rounded-2xl object-cover border-4 border-gray-100 shadow-sm">
                     <div class="flex-1 text-center sm:text-left">
                         <h4 id="modal-name" class="text-xl font-bold text-gray-900"></h4>
-                        <p class="text-sm font-medium text-blue-600">Siswa / Peminjam</p>
-                        <div class="mt-4 space-y-3">
-                            <div class="flex items-center justify-center sm:justify-start gap-3 text-sm">
-                                <div class="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400"><i class="bi bi-card-text"></i></div>
-                                <div><p class="text-xs text-gray-400 font-medium uppercase tracking-wider">NIS</p><p id="modal-nis" class="text-gray-700 font-semibold"></p></div>
-                            </div>
-                            <div class="flex items-center justify-center sm:justify-start gap-3 text-sm">
-                                <div class="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400"><i class="bi bi-door-open"></i></div>
-                                <div><p class="text-xs text-gray-400 font-medium uppercase tracking-wider">Kelas</p><p id="modal-kelas" class="text-gray-700 font-semibold"></p></div>
-                            </div>
-                        </div>
+                        <p class="text-sm font-medium text-blue-600">Peminjam</p>
                     </div>
                 </div>
                 <hr class="my-6 border-gray-100">
@@ -313,8 +284,6 @@
 <script>
     function showUserModal(user) {
         document.getElementById('modal-name').innerText = user.name;
-        document.getElementById('modal-nis').innerText = user.nis;
-        document.getElementById('modal-kelas').innerText = user.kelas;
         document.getElementById('modal-email').innerText = user.email;
         document.getElementById('modal-no-hp').innerText = user.no_hp;
         document.getElementById('modal-alamat').innerText = user.alamat;

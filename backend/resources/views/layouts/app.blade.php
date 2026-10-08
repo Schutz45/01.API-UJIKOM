@@ -218,13 +218,20 @@
 
 
     {{-- USER INFO --}}
-    <div class="px-4 py-4 border-t border-gray-800">
+    <div class="px-4 py-4 border-t border-gray-800 relative">
 
         <div class="flex items-center gap-3">
 
-            <div class="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center">
-                <i class="bi bi-person text-gray-300"></i>
-            </div>
+            {{-- Foto Profil (klik untuk menu) --}}
+            <button type="button" id="profileMenuButton" class="shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+                @if(auth()->user()->foto_profile)
+                    <img src="{{ asset('storage/' . auth()->user()->foto_profile) }}" alt="Foto Profil" class="w-10 h-10 rounded-full object-cover border-2 border-gray-600">
+                @else
+                    <div class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center border-2 border-gray-600">
+                        <i class="bi bi-person text-gray-300"></i>
+                    </div>
+                @endif
+            </button>
 
             <div class="min-w-0">
                 <p class="text-xs text-gray-500">
@@ -240,6 +247,29 @@
                 </p>
             </div>
 
+        </div>
+
+        {{-- Dropdown Menu Foto --}}
+        <div id="profileMenuDropdown" class="hidden absolute bottom-full left-0 mb-2 w-48 bg-white rounded-xl shadow-xl border border-gray-200 z-50 overflow-hidden">
+            <form id="formGantiFoto" action="{{ route('profil.foto.update') }}" method="POST" enctype="multipart/form-data" class="hidden">
+                @csrf
+                @method('PUT')
+                <input type="file" name="foto_profile" id="inputGantiFoto" accept="image/*" class="hidden">
+            </form>
+
+            <button type="button" onclick="document.getElementById('inputGantiFoto').click()" class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition">
+                <i class="bi bi-camera"></i> Ganti Foto Profil
+            </button>
+
+            @if(auth()->user()->foto_profile)
+            <form id="formHapusFoto" action="{{ route('profil.foto.destroy') }}" method="POST" class="hidden">
+                @csrf
+                @method('DELETE')
+            </form>
+            <button type="button" onclick="document.getElementById('formHapusFoto').submit()" class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition border-t border-gray-100">
+                <i class="bi bi-trash"></i> Hapus Foto Profil
+            </button>
+            @endif
         </div>
 
     </div>
@@ -335,25 +365,6 @@
 
             </div>
 
-            {{-- User --}}
-            <div class="flex items-center gap-3">
-
-                <div class="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center">
-                    <i class="bi bi-person-fill text-emerald-600"></i>
-                </div>
-
-                <div class="hidden sm:block leading-tight">
-                    <div class="text-sm font-semibold text-gray-800">
-                        {{ auth()->user()->name }}
-                    </div>
-
-                    <div class="text-xs text-gray-500 capitalize">
-                        {{ auth()->user()->role }}
-                    </div>
-                </div>
-
-            </div>
-
             {{-- Logout --}}
             <button type="button" onclick="openLogoutModal()"
                 class="flex items-center gap-2 px-3 py-2 rounded-lg
@@ -378,6 +389,30 @@
 
     <!-- KONTEN UTAMA HALAMAN -->
      <main class="flex-1 min-w-0 overflow-y-auto p-4 sm:p-6">
+        @if(session('success') || session('error'))
+            <div id="profileToast" class="fixed bottom-6 right-6 z-[10000] max-w-sm transition-all duration-300 translate-x-0 opacity-100">
+                @if(session('success'))
+                    <div class="flex items-start gap-3 bg-white border border-emerald-200 rounded-xl shadow-xl px-4 py-3">
+                        <i class="bi bi-check-circle-fill text-emerald-600 text-lg"></i>
+                        <span class="text-sm font-medium text-gray-700">{{ session('success') }}</span>
+                    </div>
+                @elseif(session('error'))
+                    <div class="flex items-start gap-3 bg-white border border-red-200 rounded-xl shadow-xl px-4 py-3">
+                        <i class="bi bi-x-circle-fill text-red-600 text-lg"></i>
+                        <span class="text-sm font-medium text-gray-700">{{ session('error') }}</span>
+                    </div>
+                @endif
+            </div>
+            <script>
+                setTimeout(function() {
+                    const toast = document.getElementById('profileToast');
+                    if (toast) {
+                        toast.classList.add('translate-x-full', 'opacity-0');
+                        setTimeout(() => toast.remove(), 300);
+                    }
+                }, 5000);
+            </script>
+        @endif
         @yield('content')
     </main>
 </div>
@@ -648,14 +683,14 @@
 </script>
     
     {{-- Modal Konfirmasi Logout --}}
-    <div id="logoutModal" class="fixed inset-0 z-[9999] hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div id="logoutModal" class="fixed inset-0 z-[9999] hidden overflow-y-auto opacity-0 transition-opacity duration-300" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
             {{-- Overlay --}}
             <div class="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-50 backdrop-blur-sm" aria-hidden="true" onclick="closeLogoutModal()"></div>
 
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
-            <div class="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-2xl shadow-2xl sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-gray-100">
+            <div id="logoutModalPanel" class="inline-block overflow-hidden text-left align-bottom transition-all duration-300 transform bg-white rounded-2xl shadow-2xl sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-gray-100 scale-95">
                 <div class="p-6">
                     <div class="flex items-start gap-4">
                         <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center shrink-0">
@@ -688,19 +723,62 @@
 
     <script>
         function openLogoutModal() {
-            document.getElementById('logoutModal').classList.remove('hidden');
+            const modal = document.getElementById('logoutModal');
+            const panel = document.getElementById('logoutModalPanel');
+            modal.classList.remove('hidden');
             document.body.style.overflow = 'hidden';
+            // Trigger animasi setelah elemen tampil
+            requestAnimationFrame(function() {
+                modal.classList.remove('opacity-0');
+                panel.classList.remove('scale-95');
+            });
         }
 
         function closeLogoutModal() {
-            document.getElementById('logoutModal').classList.add('hidden');
+            const modal = document.getElementById('logoutModal');
+            const panel = document.getElementById('logoutModalPanel');
+            modal.classList.add('opacity-0');
+            panel.classList.add('scale-95');
             document.body.style.overflow = 'auto';
+            setTimeout(function() {
+                modal.classList.add('hidden');
+            }, 300);
         }
 
         // Close on ESC
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') closeLogoutModal();
         });
+    </script>
+    <script>
+        // Toggle Menu Profil
+        const profileMenuButton = document.getElementById('profileMenuButton');
+        const profileMenuDropdown = document.getElementById('profileMenuDropdown');
+        
+        if (profileMenuButton) {
+            profileMenuButton.addEventListener('click', function(event) {
+                event.stopPropagation();
+                profileMenuDropdown.classList.toggle('hidden');
+            });
+            
+            document.addEventListener('click', function(event) {
+                if (!profileMenuDropdown.contains(event.target) && event.target !== profileMenuButton) {
+                    profileMenuDropdown.classList.add('hidden');
+                }
+            });
+        }
+
+        // Otomatis Submit saat pilih foto
+        const inputGantiFoto = document.getElementById('inputGantiFoto');
+        const formGantiFoto = document.getElementById('formGantiFoto');
+        
+        if (inputGantiFoto && formGantiFoto) {
+            inputGantiFoto.addEventListener('change', function() {
+                if (this.files && this.files.length > 0) {
+                    formGantiFoto.submit();
+                }
+            });
+        }
     </script>
 </body>
 </html>

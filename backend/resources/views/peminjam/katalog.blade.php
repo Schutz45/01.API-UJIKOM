@@ -6,53 +6,6 @@
 @section('content')
 
     {{-- =====================================================
-         ALERT
-    ====================================================== --}}
-    @if(session('success'))
-
-        <div
-            class="mb-5 p-4 rounded-xl
-                   bg-emerald-50 border border-emerald-200
-                   text-emerald-700">
-
-            <div class="flex items-center gap-2">
-
-                <i class="bi bi-check-circle-fill"></i>
-
-                <span>
-                    {{ session('success') }}
-                </span>
-
-            </div>
-
-        </div>
-
-    @endif
-
-
-    @if(session('error'))
-
-        <div
-            class="mb-5 p-4 rounded-xl
-                   bg-red-50 border border-red-200
-                   text-red-700">
-
-            <div class="flex items-center gap-2">
-
-                <i class="bi bi-exclamation-circle-fill"></i>
-
-                <span>
-                    {{ session('error') }}
-                </span>
-
-            </div>
-
-        </div>
-
-    @endif
-
-
-    {{-- =====================================================
         HERO KATALOG
     ====================================================== --}}
     <section
@@ -68,7 +21,7 @@
             BACKGROUND MEGUMIN
         ================================================== --}}
         <img
-            src="{{ asset('storage/images/megumin-banner.png') }}"
+            src="{{ asset('storage/images/meguview.png') }}"
             alt="Megumin"
             class="absolute inset-0
                 w-full h-full
@@ -149,7 +102,8 @@
                             md:text-4xl
                             font-extrabold
                             tracking-tight
-                            text-slate-900">
+                            text-white
+                            drop-shadow-lg">
 
                         Daftar Alat
 
@@ -161,7 +115,7 @@
                         class="mt-3
                             text-sm
                             md:text-base
-                            text-slate-900
+                            text-white
                             font-bold
                             leading-relaxed
                             max-w-lg">
@@ -340,9 +294,9 @@
                                border border-slate-200
                                shadow-sm
                                overflow-hidden
-                               hover:shadow-md
-                               hover:-translate-y-1
-                               transition duration-200"
+                               transition-all duration-300 ease-out
+                               hover:shadow-xl
+                               hover:-translate-y-1.5"
                         data-search="
                             {{ strtolower(
                                 $alat->nama_alat . ' ' .
@@ -369,8 +323,8 @@
                                         object-cover
                                         object-center
                                         transition
-                                        duration-300
-                                        hover:scale-105">
+                                        duration-500
+                                        hover:scale-110">
 
                             @else
 
@@ -700,6 +654,25 @@
     const alatCards = document.querySelectorAll('.alat-card');
     const searchEmpty = document.getElementById('searchEmpty');
 
+    // Animasi stagger: kartu muncul berurutan dengan efek fade-up
+    alatCards.forEach(function (card, index) {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(16px)';
+
+        setTimeout(function () {
+            card.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+
+            // Bersihkan inline style setelah animasi selesai agar
+            // efek hover Tailwind (hover:-translate-y-1.5) tetap berfungsi
+            setTimeout(function () {
+                card.style.transition = '';
+                card.style.transform = '';
+            }, 500);
+        }, 80 * index);
+    });
+
     if (searchInput) {
 
         searchInput.addEventListener('input', function () {
@@ -714,12 +687,24 @@
 
                 if (data.includes(keyword)) {
 
+                    // Munculkan kembali dengan fade-in halus
                     card.classList.remove('hidden');
+                    requestAnimationFrame(function () {
+                        card.style.opacity = '1';
+                        card.style.transform = 'translateY(0)';
+                    });
                     jumlahTampil++;
 
                 } else {
 
-                    card.classList.add('hidden');
+                    // Sembunyikan dengan fade-out halus, baru sembunyikan total
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(8px)';
+                    setTimeout(function () {
+                        if (card.style.opacity === '0') {
+                            card.classList.add('hidden');
+                        }
+                    }, 200);
 
                 }
 

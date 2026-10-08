@@ -118,22 +118,20 @@ class AlatController extends Controller
     }
 
     /**
-     * Tandai sejumlah unit alat sebagai rusak.
-     * Stok (baik) berkurang, stok_rusak bertambah.
+     * Tandai unit alat tertentu sebagai rusak.
      */
     public function tandaiRusak(Request $request, Alat $alat): JsonResponse
     {
-        // Validasi stok
         $request->validate([
-            'jumlah'    =>  ['required', 'integer', 'min:1', "max:{$alat->jumlah_tersedia}"],
+            'unit_ids'     =>  ['required', 'array', 'min:1'],
+            'unit_ids.*'   =>  ['exists:unit_alat,id'],
         ], [
-            'jumlah.required'  => 'Jumlah unit yang ditandai rusak wajib diisi.',
-            'jumlah.min'       => 'Minimal 1 unit harus ditandai rusak.',
-            'jumlah.max'       => "Jumlah melebihi stok baik yang tersedia ({$alat->jumlah_tersedia} unit).",
+            'unit_ids.required' => 'Pilih minimal satu unit untuk ditandai rusak.',
+            'unit_ids.min'      => 'Pilih minimal satu unit untuk ditandai rusak.',
         ]);
 
         try {
-            $alat->markUnitsAsBroken((int)$request->jumlah);
+            $alat->markUnitsAsBroken($request->unit_ids);
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
@@ -141,28 +139,26 @@ class AlatController extends Controller
         $alat->refresh();
 
         return response()->json([
-            'message'   =>  "Berhasil menandai {$request->jumlah} unit '{$alat->nama_alat}' sebagai rusak.",
+            'message'   =>  "Berhasil menandai " . count($request->unit_ids) . " unit '{$alat->nama_alat}' sebagai rusak.",
             'data'      =>  new AlatResource($alat->load('kategori'))
         ]);
     }
 
     /**
-     * Perbaiki sejumlah unit alat yang rusak.
-     * Stok_rusak berkurang, stok (baik) bertambah.
+     * Perbaiki unit alat tertentu yang rusak.
      */
     public function perbaiki(Request $request, Alat $alat): JsonResponse
     {
-        // Validasi
         $request->validate([
-            'jumlah'    =>  ['required', 'integer', 'min:1', "max:{$alat->jumlah_rusak}"],
+            'unit_ids'     =>  ['required', 'array', 'min:1'],
+            'unit_ids.*'   =>  ['exists:unit_alat,id'],
         ], [
-            'jumlah.required'  => 'Jumlah unit yang diperbaiki wajib diisi.',
-            'jumlah.min'       => 'Minimal 1 unit harus diperbaiki.',
-            'jumlah.max'       => "Jumlah melebihi stok rusak yang tersedia ({$alat->jumlah_rusak} unit).",
+            'unit_ids.required' => 'Pilih minimal satu unit untuk diperbaiki.',
+            'unit_ids.min'      => 'Pilih minimal satu unit untuk diperbaiki.',
         ]);
 
         try {
-            $alat->repairUnits((int)$request->jumlah);
+            $alat->repairUnits($request->unit_ids);
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
@@ -170,7 +166,7 @@ class AlatController extends Controller
         $alat->refresh();
 
         return response()->json([
-            'message'   =>  "Berhasil memperbaiki {$request->jumlah} unit '{$alat->nama_alat}'.",
+            'message'   =>  "Berhasil memperbaiki " . count($request->unit_ids) . " unit '{$alat->nama_alat}'.",
             'data'      =>  new AlatResource($alat->load('kategori'))
         ]);
     }

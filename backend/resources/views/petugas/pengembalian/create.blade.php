@@ -98,37 +98,30 @@
                         Alat yang Dipinjam
                     </h4>
 
-                    <div class="border border-gray-200 rounded-lg overflow-hidden mb-6">
-
-                        <table class="w-full text-left text-sm">
-
-                            <thead class="bg-gray-100 text-gray-600">
-                                <tr>
-                                    <th class="px-4 py-3 border-b">Nama Alat</th>
-                                    <th class="px-4 py-3 border-b text-center">Dipinjam</th>
-                                    <th class="px-4 py-3 border-b text-center kol-rusak">Jumlah Rusak</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($peminjaman->detailPinjam as $detail)
-                                    <tr>
-                                        <td class="px-4 py-3 border-b font-medium">{{ $detail->alat->nama_alat ?? 'Alat Dihapus' }}</td>
-                                        <td class="px-4 py-3 border-b text-center font-bold">{{ $detail->jumlah }}</td>
-                                        <td class="px-4 py-3 border-b text-center kol-rusak">
-                                            <input type="number" 
-                                                   name="jumlah_rusak[{{ $detail->alat_id }}]" 
-                                                   min="0" 
-                                                   max="{{ $detail->jumlah }}" 
-                                                   placeholder="{{ $detail->jumlah }}"
-                                                   class="w-24 px-2 py-1 text-center border border-red-300 rounded focus:ring-red-500 focus:border-red-500">
-                                            <span class="block text-[10px] text-gray-500 mt-0.5">Maks: {{ $detail->jumlah }}</span>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-
-                        </table>
-
+                    <div class="space-y-4 mb-6">
+                        @foreach($peminjaman->detailPinjam as $detail)
+                            <div class="border border-gray-200 rounded-lg p-4">
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="font-medium text-gray-800">{{ $detail->alat->nama_alat ?? 'Alat Dihapus' }}</span>
+                                    <span class="text-xs text-gray-500">{{ $detail->jumlah }} unit</span>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    @foreach($detail->unitAlat as $unit)
+                                        <div class="unit-card flex items-center justify-between border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 transition-all duration-200">
+                                            <span class="font-mono text-sm">{{ $unit->nomor_seri }}</span>
+                                            <div class="flex gap-3 text-sm">
+                                                <label class="flex items-center gap-1 cursor-pointer">
+                                                    <input type="radio" name="unit_kondisi[{{ $unit->id }}]" value="baik" required class="text-emerald-600 focus:ring-emerald-500"> Baik
+                                                </label>
+                                                <label class="flex items-center gap-1 cursor-pointer text-red-600">
+                                                    <input type="radio" name="unit_kondisi[{{ $unit->id }}]" value="rusak" class="text-red-600 focus:ring-red-500"> Rusak
+                                                </label>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endforeach
                     </div>
 
                     <h4 class="text-sm font-bold text-gray-700 mb-4">
@@ -151,28 +144,12 @@
                                 class="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm text-gray-700">
                         </div>
 
-                        {{-- Kondisi --}}
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">
-                                Kondisi Alat Saat Kembali
-                            </label>
-
-                            <select
-                                name="kondisi_kembali"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-
-                                <option value="">-- Pilih Kondisi --</option>
-                                <option value="baik">Baik</option>
-                                <option value="rusak">Rusak</option>
-
-                            </select>
-                        </div>
-
                         {{-- Denda --}}
-                        <div class="md:col-span-2">
+                        <div id="wrapper_denda">
 
                             <label class="block text-sm font-medium text-gray-700 mb-1">
                                 Denda Kerusakan
+                                <span id="denda_wajib_label" class="text-red-600 font-bold hidden">* WAJIB</span>
                             </label>
 
                             <div class="relative">
@@ -186,15 +163,21 @@
                                     name="denda"
                                     id="denda_kerusakan"
                                     min="0"
-                                    value="0"
+                                    step="1000"
+                                    value="{{ old('denda') }}"
                                     disabled
-                                    class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:bg-gray-100 disabled:text-gray-400">
+                                    class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:bg-gray-100 disabled:text-gray-400"
+                                    placeholder="Belum ada unit rusak">
 
                             </div>
 
-                            <p class="text-xs text-gray-500 mt-1">
-                                Isi nominal denda kerusakan hanya jika alat dikembalikan dalam kondisi rusak.
+                            <p id="denda_catatan" class="text-xs text-gray-500 mt-1">
+                                Kolom denda aktif setelah ada unit yang dipilih Rusak.
                             </p>
+
+                            @error('denda')
+                                <p class="text-xs text-red-600 mt-1 font-medium">{{ $message }}</p>
+                            @enderror
 
                         </div>
 
@@ -248,8 +231,12 @@
 
                         <button
                             type="submit"
-                            class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
-                            Simpan Pengembalian
+                            id="btnProsesPengembalian"
+                            class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition disabled:opacity-70 disabled:cursor-not-allowed">
+                            <span id="btnText">Simpan Pengembalian</span>
+                            <span id="btnSpinner" class="hidden items-center gap-2">
+                                <i class="bi bi-arrow-repeat animate-spin"></i> Memproses...
+                            </span>
                         </button>
 
                     </div>
@@ -265,10 +252,11 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const kondisiSelect = document.querySelector('select[name="kondisi_kembali"]');
-        const kolRusak = document.querySelectorAll('.kol-rusak');
         const dendaKerusakanInput = document.getElementById('denda_kerusakan');
         const tglKembaliInput = document.getElementById('tgl_kembali');
+        const radiosKondisi = document.querySelectorAll('input[name^="unit_kondisi["]');
+        const dendaWajibLabel = document.getElementById('denda_wajib_label');
+        const dendaCatatan = document.getElementById('denda_catatan');
 
         // Data dari backend
         const tglRencanaKembali = new Date("{{ $peminjaman->tgl_kembali_plan }}");
@@ -282,6 +270,61 @@
 
         function formatRupiah(number) {
             return 'Rp' + number.toLocaleString('id-ID');
+        }
+
+        // Hitung jumlah unit yang dipilih "Rusak"
+        function hitungUnitRusak() {
+            let rusak = 0;
+            radiosKondisi.forEach(el => {
+                if (el.value === 'rusak' && el.checked) rusak++;
+            });
+            return rusak;
+        }
+
+        // Highlight kartu unit sesuai pilihan kondisi (baik=hijau, rusak=merah)
+        function highlightUnitCards() {
+            radiosKondisi.forEach(el => {
+                const card = el.closest('.unit-card');
+                if (!card) return;
+
+                if (el.checked) {
+                    if (el.value === 'rusak') {
+                        card.classList.add('bg-red-50', 'border-red-300');
+                        card.classList.remove('bg-emerald-50', 'border-emerald-300');
+                    } else {
+                        card.classList.add('bg-emerald-50', 'border-emerald-300');
+                        card.classList.remove('bg-red-50', 'border-red-300');
+                    }
+                }
+            });
+        }
+
+        // Aktifkan/nonaktifkan kewajiban field denda
+        function syncWajibDenda() {
+            const adaRusak = hitungUnitRusak() > 0;
+
+            if (adaRusak) {
+                dendaKerusakanInput.disabled = false;
+                dendaKerusakanInput.required = true;
+                dendaKerusakanInput.min = 1000;
+                dendaWajibLabel.classList.remove('hidden');
+                dendaCatatan.innerText = 'Wajib diisi minimal Rp1.000 karena ada unit yang dikembalikan rusak.';
+                dendaCatatan.className = 'text-xs text-red-600 font-medium mt-1';
+                dendaKerusakanInput.classList.add('border-red-400');
+                dendaKerusakanInput.classList.remove('disabled:bg-gray-100', 'disabled:text-gray-400');
+            } else {
+                dendaKerusakanInput.disabled = true;
+                dendaKerusakanInput.required = false;
+                dendaKerusakanInput.min = 0;
+                dendaKerusakanInput.value = '';
+                dendaWajibLabel.classList.add('hidden');
+                dendaCatatan.innerText = 'Tidak ada unit rusak, tidak ada denda kerusakan.';
+                dendaCatatan.className = 'text-xs text-gray-500 mt-1';
+                dendaKerusakanInput.classList.remove('border-red-400');
+                dendaKerusakanInput.classList.add('disabled:bg-gray-100', 'disabled:text-gray-400');
+            }
+
+            calculateDenda();
         }
 
         function calculateDenda() {
@@ -299,46 +342,39 @@
             labelHariTelat.innerText = `${hariTelat} hari`;
             labelDendaTelat.innerText = formatRupiah(dendaTelat);
 
-            if (kondisiSelect.value === 'rusak') {
+            if (dendaKerusakan > 0) {
                 rowDendaRusak.classList.remove('hidden');
                 labelDendaRusak.innerText = formatRupiah(dendaKerusakan);
             } else {
                 rowDendaRusak.classList.add('hidden');
-                dendaKerusakan = 0;
             }
 
             labelTotalDenda.innerText = formatRupiah(dendaTelat + dendaKerusakan);
         }
 
-        function toggleRusak() {
-            if (kondisiSelect.value === 'rusak') {
-                dendaKerusakanInput.disabled = false;
-                dendaKerusakanInput.required = true;
-                if (dendaKerusakanInput.value == 0) dendaKerusakanInput.value = '';
-                document.querySelectorAll('input[name^=jumlah_rusak]').forEach(el => {
-                    el.disabled = false;
-                    el.required = true;
-                    el.classList.remove('bg-gray-100');
-                });
-            } else {
-                dendaKerusakanInput.disabled = true;
-                dendaKerusakanInput.required = false;
-                dendaKerusakanInput.value = 0;
-                document.querySelectorAll('input[name^=jumlah_rusak]').forEach(el => {
-                    el.value = 0;
-                    el.disabled = true;
-                    el.required = false;
-                    el.classList.add('bg-gray-100');
-                });
-            }
-            calculateDenda();
-        }
-
-        kondisiSelect.addEventListener('change', toggleRusak);
+        radiosKondisi.forEach(el => el.addEventListener('change', function() {
+            syncWajibDenda();
+            highlightUnitCards();
+        }));
         dendaKerusakanInput.addEventListener('input', calculateDenda);
         tglKembaliInput.addEventListener('change', calculateDenda);
 
-        toggleRusak();
+        const formPetugas = document.querySelector('form[action*="pengembalian"]');
+        if (formPetugas) {
+            formPetugas.addEventListener('submit', function() {
+                const btn = document.getElementById('btnProsesPengembalian');
+                const btnText = document.getElementById('btnText');
+                const btnSpinner = document.getElementById('btnSpinner');
+                if (btn && btnText && btnSpinner) {
+                    btn.disabled = true;
+                    btnText.classList.add('hidden');
+                    btnSpinner.classList.remove('hidden');
+                    btnSpinner.classList.add('inline-flex');
+                }
+            });
+        }
+
+        syncWajibDenda();
     });
 </script>
 @endsection

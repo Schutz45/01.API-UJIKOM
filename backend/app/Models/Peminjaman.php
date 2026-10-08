@@ -74,10 +74,10 @@ class Peminjaman extends Model
     {
         $allowedTransitions = [
             'diajukan'     => ['dipinjam', 'ditolak'],
-            'dipinjam'     => ['dikembalikan'],
-            'telat'        => ['dikembalikan'],
-            'dikembalikan' => [], // Status terminal - terkunci permanen
-            'ditolak'      => [], // Status terminal - terkunci permanen
+            'dipinjam'     => [], // Tidak bisa langsung ke dikembalikan
+            'telat'        => [], // Tidak bisa langsung ke dikembalikan
+            'dikembalikan' => [], // Status terminal
+            'ditolak'      => [], // Status terminal
         ];
 
         $currentStatus = $this->status; // Menggunakan accessor getStatusAttribute
@@ -88,5 +88,16 @@ class Peminjaman extends Model
         }
 
         return in_array($targetStatus, $allowedTransitions[$currentStatus] ?? [], true);
+    }
+
+    /**
+     * Khusus untuk alur pengembalian resmi (bukan ubah status manual).
+     * Pengembalian hanya bisa dilakukan jika peminjaman sedang aktif
+     * (dipinjam atau telat), dan belum pernah dikembalikan sebelumnya.
+     */
+    public function canBeReturned(): bool
+    {
+        return in_array($this->status, ['dipinjam', 'telat'])
+            && !$this->pengembalian()->exists();
     }
 }

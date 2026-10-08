@@ -103,19 +103,47 @@ class PetugasController extends Controller
     public function prosesPengembalian(Request $request, $peminjamanId)
     {
         $request->validate([
-            'kondisi_kembali'   =>  'required|in:baik,rusak',
-            'denda'             =>  'required_if:kondisi_kembali,rusak|integer|min:0',
-            'jumlah_rusak'      =>  'required_if:kondisi_kembali,rusak|array',
-            'jumlah_rusak.*'    =>  'nullable|integer|min:0',
+            'unit_kondisi'      =>  'required|array',
+            'unit_kondisi.*'    =>  'required|in:baik,rusak',
+            'denda'             =>  'nullable|integer|min:0',
         ]);
 
         DB::beginTransaction();
 
         try {
-            $peminjaman = Peminjaman::with('detailPinjam.alat')->lockForUpdate()->findOrFail($peminjamanId);
+            $peminjaman = Peminjaman::with('detailPinjam.alat', 'detailPinjam.unitAlat')->lockForUpdate()->findOrFail($peminjamanId);
 
-            // Pastikan peminjaman masih aktif dan bisa diproses (guard transisi eksplisit)
-            if (!$peminjaman->canTransitionTo('dikembalikan')) {
+            // Pastikan semua unit yang dialokasikan pada peminjaman memiliki kondisi (SET exact match)
+            $unitTerdaftar = array_map(
+                'strval',
+                $peminjaman->detailPinjam
+                    ->flatMap(fn($detail) => $detail->unitAlat->pluck('id'))
+                    ->all()
+            );
+
+            $unitDikirim = array_map(
+                'strval',
+                array_keys($request->unit_kondisi)
+            );
+
+            sort($unitTerdaftar);
+            sort($unitDikirim);
+
+            if ($unitTerdaftar !== $unitDikirim) {
+                throw new \Exception('Data unit yang dikembalikan tidak valid. Mohon pastikan semua unit yang dipinjam telah ditentukan kondisinya dengan benar.');
+            }
+
+            // Validasi Denda Kerusakan: wajib jika ada unit rusak, nol jika semua baik
+            if (in_array('rusak', $request->unit_kondisi, true)) {
+                if ($request->denda === null || (int)$request->denda < 1000) {
+                    throw new \Exception('Denda kerusakan wajib diisi minimal Rp1.000 jika ada unit yang rusak.');
+                }
+            } else {
+                $request->merge(['denda' => 0]);
+            }
+
+            // Pastikan peminjaman masih aktif dan bisa diproses (guard alur pengembalian resmi)
+            if (!$peminjaman->canBeReturned()) {
                 throw new \Exception("Peminjaman ini berstatus '{$peminjaman->status}' dan tidak dapat diproses untuk pengembalian.");
             }
 
@@ -134,17 +162,20 @@ class PetugasController extends Controller
             // Denda keterlambatan Rp 1.000 per hari
             $dendaKeterlambatan = $hariTerlambat * 1000;
 
-            // Denda kerusakan dimasukkan Petugas secara manual
-            $dendaKerusakan = $request->denda ?? 0;
+            // Denda kerusakan dimasukkan Petugas secara manual (divalidasi di atas)
+            $dendaKerusakan = (int)$request->denda;
 
             // Total denda
             $totalDenda = $dendaKeterlambatan + $dendaKerusakan;
+
+            // Tentukan kondisi pengembalian secara keseluruhan dari kondisi unit
+            $kondisiKembali = in_array('rusak', $request->unit_kondisi, true) ? 'rusak' : 'baik';
 
             // Simpan data pengembalian
             Pengembalian::create([
                 'peminjaman_id'         =>  $peminjaman->id,
                 'tgl_kembali'           =>  $tglKembali,
-                'kondisi_kembali'       =>  $request->kondisi_kembali,
+                'kondisi_kembali'       =>  $kondisiKembali,
                 'denda_keterlambatan'   =>  $dendaKeterlambatan,
                 'denda_kerusakan'       =>  $dendaKerusakan,
                 'denda'                 =>  $totalDenda,
@@ -154,23 +185,20 @@ class PetugasController extends Controller
             // Kembalikan stok unit alat
             foreach ($peminjaman->detailPinjam as $detail) {
                 $alat = $detail->alat;
-                $jmlRusak = 0;
 
                 // Ambil unit yang dipinjam untuk detail ini
                 $units = $detail->unitAlat;
 
-                if ($request->kondisi_kembali === 'rusak') {
-                    $inputRusak = $request->jumlah_rusak[$detail->alat_id] ?? 0;
-                    $jmlRusak = (int)$inputRusak;
-                }
+                $jmlRusak = 0;
 
-                // Update kondisi masing-masing unit
-                $rusakCount = 0;
+                // Update kondisi masing-masing unit berdasarkan nomor seri
                 foreach ($units as $unit) {
-                    if ($rusakCount < $jmlRusak) {
+                    $kondisi = $request->unit_kondisi[$unit->id] ?? 'baik';
+
+                    if ($kondisi === 'rusak') {
                         $unit->update(['status' => 'rusak', 'kondisi' => 'rusak']);
                         $detail->unitAlat()->updateExistingPivot($unit->id, ['kondisi_masuk' => 'rusak']);
-                        $rusakCount++;
+                        $jmlRusak++;
                     } else {
                         $unit->update(['status' => 'tersedia', 'kondisi' => 'baik']);
                         $detail->unitAlat()->updateExistingPivot($unit->id, ['kondisi_masuk' => 'baik']);

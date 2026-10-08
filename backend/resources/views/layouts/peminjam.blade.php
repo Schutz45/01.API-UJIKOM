@@ -143,19 +143,19 @@
                 {{-- Profil --}}
                 <div
                     class="border-t border-slate-800
-                           pt-4 mb-3">
+                           pt-4 mb-3 relative">
 
                     <div class="flex items-center gap-3 px-2">
 
-                        <div
-                            class="w-9 h-9 rounded-full
-                                   bg-indigo-500
-                                   flex items-center justify-center
-                                   shrink-0">
-
-                            <i class="bi bi-person-fill"></i>
-
-                        </div>
+                        <button type="button" id="profileMenuButtonPeminjam" class="shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            @if(auth()->user()->foto_profile)
+                                <img src="{{ asset('storage/' . auth()->user()->foto_profile) }}" alt="Foto Profil" class="w-10 h-10 rounded-full object-cover border-2 border-slate-700">
+                            @else
+                                <div class="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center text-white shrink-0 border-2 border-slate-700">
+                                    <i class="bi bi-person-fill"></i>
+                                </div>
+                            @endif
+                        </button>
 
                         <div class="min-w-0">
 
@@ -177,6 +177,29 @@
 
                         </div>
 
+                    </div>
+
+                    {{-- Dropdown Menu Foto Peminjam --}}
+                    <div id="profileMenuDropdownPeminjam" class="hidden absolute bottom-full left-0 mb-2 w-48 bg-white rounded-xl shadow-xl border border-slate-200 z-50 overflow-hidden text-slate-800">
+                        <form id="formGantiFotoPeminjam" action="{{ route('profil.foto.update') }}" method="POST" enctype="multipart/form-data" class="hidden">
+                            @csrf
+                            @method('PUT')
+                            <input type="file" name="foto_profile" id="inputGantiFotoPeminjam" accept="image/*" class="hidden">
+                        </form>
+
+                        <button type="button" onclick="document.getElementById('inputGantiFotoPeminjam').click()" class="w-full flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-slate-50 transition">
+                            <i class="bi bi-camera"></i> Ganti Foto Profil
+                        </button>
+
+                        @if(auth()->user()->foto_profile)
+                        <form id="formHapusFotoPeminjam" action="{{ route('profil.foto.destroy') }}" method="POST" class="hidden">
+                            @csrf
+                            @method('DELETE')
+                        </form>
+                        <button type="button" onclick="document.getElementById('formHapusFotoPeminjam').submit()" class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition border-t border-slate-100">
+                            <i class="bi bi-trash"></i> Hapus Foto Profil
+                        </button>
+                        @endif
                     </div>
 
                 </div>
@@ -295,39 +318,6 @@
                         </div>
                     </div>
 
-
-                    {{-- User --}}
-                    <div class="flex items-center gap-2">
-
-                        <div
-                            class="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center">
-                            <i class="bi bi-person-fill text-indigo-600"></i>
-                        </div>
-
-                        <div class="hidden sm:block leading-tight">
-
-                            <p
-                                class="text-sm font-semibold
-                                       text-slate-700">
-
-                                {{ auth()->user()->name }}
-
-                            </p>
-
-                            <p
-                                class="text-[11px] text-slate-400
-                                       capitalize">
-
-                                {{ auth()->user()->role }}
-
-                            </p>
-
-                        </div>
-
-                        
-
-                    </div>
-
                 </div>
 
             </header>
@@ -337,6 +327,31 @@
                  CONTENT
             ================================================== --}}
             <main class="flex-1 overflow-y-auto">
+
+                @if(session('success') || session('error'))
+                    <div id="profileToast" class="fixed bottom-6 right-6 z-[10000] max-w-sm transition-all duration-300 translate-x-0 opacity-100">
+                        @if(session('success'))
+                            <div class="flex items-start gap-3 bg-white border border-emerald-200 rounded-xl shadow-xl px-4 py-3">
+                                <i class="bi bi-check-circle-fill text-emerald-600 text-lg"></i>
+                                <span class="text-sm font-medium text-slate-700">{{ session('success') }}</span>
+                            </div>
+                        @elseif(session('error'))
+                            <div class="flex items-start gap-3 bg-white border border-red-200 rounded-xl shadow-xl px-4 py-3">
+                                <i class="bi bi-x-circle-fill text-red-600 text-lg"></i>
+                                <span class="text-sm font-medium text-slate-700">{{ session('error') }}</span>
+                            </div>
+                        @endif
+                    </div>
+                    <script>
+                        setTimeout(function() {
+                            const toast = document.getElementById('profileToast');
+                            if (toast) {
+                                toast.classList.add('translate-x-full', 'opacity-0');
+                                setTimeout(() => toast.remove(), 300);
+                            }
+                        }, 5000);
+                    </script>
+                @endif
 
                 <div
                     class="p-6 lg:p-8
@@ -486,11 +501,11 @@
     @stack('scripts')
 
     {{-- Modal Konfirmasi Logout --}}
-    <div id="logoutModal" class="fixed inset-0 z-[9999] hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div id="logoutModal" class="fixed inset-0 z-[9999] hidden overflow-y-auto opacity-0 transition-opacity duration-300" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
             <div class="fixed inset-0 transition-opacity bg-slate-900/60 backdrop-blur-sm" aria-hidden="true" onclick="closeLogoutModal()"></div>
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <div class="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-3xl shadow-2xl sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-slate-100">
+            <div id="logoutModalPanel" class="inline-block overflow-hidden text-left align-bottom transition-all duration-300 transform bg-white rounded-3xl shadow-2xl sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-slate-100 scale-95">
                 <div class="p-6 sm:p-8">
                     <div class="flex items-start gap-4">
                         <div class="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center text-red-500 shrink-0">
@@ -523,18 +538,59 @@
 
     <script>
         function openLogoutModal() {
-            document.getElementById('logoutModal').classList.remove('hidden');
+            const modal = document.getElementById('logoutModal');
+            const panel = document.getElementById('logoutModalPanel');
+            modal.classList.remove('hidden');
             document.body.style.overflow = 'hidden';
+            requestAnimationFrame(function() {
+                modal.classList.remove('opacity-0');
+                panel.classList.remove('scale-95');
+            });
         }
 
         function closeLogoutModal() {
-            document.getElementById('logoutModal').classList.add('hidden');
+            const modal = document.getElementById('logoutModal');
+            const panel = document.getElementById('logoutModalPanel');
+            modal.classList.add('opacity-0');
+            panel.classList.add('scale-95');
             document.body.style.overflow = 'auto';
+            setTimeout(function() {
+                modal.classList.add('hidden');
+            }, 300);
         }
 
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') closeLogoutModal();
         });
+
+        // Toggle Menu Profil Peminjam
+        const profileMenuButtonPeminjam = document.getElementById('profileMenuButtonPeminjam');
+        const profileMenuDropdownPeminjam = document.getElementById('profileMenuDropdownPeminjam');
+
+        if (profileMenuButtonPeminjam) {
+            profileMenuButtonPeminjam.addEventListener('click', function(event) {
+                event.stopPropagation();
+                profileMenuDropdownPeminjam.classList.toggle('hidden');
+            });
+
+            document.addEventListener('click', function(event) {
+                if (!profileMenuDropdownPeminjam.contains(event.target) && event.target !== profileMenuButtonPeminjam) {
+                    profileMenuDropdownPeminjam.classList.add('hidden');
+                }
+            });
+        }
+        
+        // Otomatis Submit saat pilih foto Peminjam
+        const inputGantiFotoPeminjam = document.getElementById('inputGantiFotoPeminjam');
+        const formGantiFotoPeminjam = document.getElementById('formGantiFotoPeminjam');
+        
+        if (inputGantiFotoPeminjam && formGantiFotoPeminjam) {
+            inputGantiFotoPeminjam.addEventListener('change', function() {
+                if (this.files && this.files.length > 0) {
+                    formGantiFotoPeminjam.submit();
+                }
+            });
+        }
     </script>
 </body>
 

@@ -3,7 +3,9 @@
 namespace Database\Seeders;
 
 use App\Models\Peminjaman;
+use App\Models\UnitAlat;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class PeminjamanSeeder extends Seeder
 {
@@ -13,6 +15,10 @@ class PeminjamanSeeder extends Seeder
      * Catatan: status "telat" tidak perlu disimpan ke database.
      * Ia dihitung otomatis oleh accessor Peminjaman::getStatusAttribute()
      * saat status="dipinjam" dan tgl_kembali_plan sudah lewat.
+     *
+     * Peminjaman "dipinjam"/"dikembalikan" juga menjalankan alokasi unit
+     * (detail_pinjam_unit) agar konsisten dengan alur persetujuan petugas,
+     * sehingga nomor seri unit selalu tercatat.
      */
     public function run(): void
     {
@@ -54,5 +60,8 @@ class PeminjamanSeeder extends Seeder
         foreach ($peminjaman as $pinjam) {
             Peminjaman::create($pinjam);
         }
+
+        // Alokasikan unit untuk peminjaman non-diajukan (simulasi persetujuan petugas)
+        // DetailPinjamSeeder berjalan setelah seeder ini, jadi detail belum ada di sini.
     }
 }

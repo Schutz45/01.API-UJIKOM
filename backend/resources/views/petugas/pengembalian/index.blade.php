@@ -5,23 +5,6 @@
 
 @section('content')
 
-    {{-- Alert Success --}}
-    @if(session('success'))
-        <div class="mb-4 bg-emerald-50 border border-emerald-200 text-emerald-800
-                    p-4 rounded-lg shadow-sm text-sm">
-            {{ session('success') }}
-        </div>
-    @endif
-
-    {{-- Alert Error --}}
-    @if(session('error'))
-        <div class="mb-4 bg-red-50 border border-red-200 text-red-800
-                    p-4 rounded-lg shadow-sm text-sm">
-            {{ session('error') }}
-        </div>
-    @endif
-
-
     {{-- Container --}}
     <div class="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
 
@@ -113,6 +96,28 @@
 
                                             (Jumlah: {{ $detail->jumlah }})
                                         </li>
+
+                                        {{-- Tampilkan nomor seri unit yang dialokasikan --}}
+                                        @if($detail->unitAlat->isNotEmpty())
+                                            <li class="ml-4">
+                                                <span class="flex flex-wrap gap-1 mt-0.5">
+                                                    @foreach($detail->unitAlat as $unit)
+                                                        @php
+                                                            $kondisiMasuk = $unit->pivot->kondisi_masuk;
+                                                            $badgeClass = $kondisiMasuk === 'rusak'
+                                                                ? 'bg-red-100 text-red-700 border-red-200'
+                                                                : 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                                                        @endphp
+                                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium border {{ $badgeClass }}">
+                                                            {{ $unit->nomor_seri }}
+                                                            @if($kondisiMasuk === 'rusak')
+                                                                <i class="bi bi-x-circle-fill ml-0.5"></i>
+                                                            @endif
+                                                        </span>
+                                                    @endforeach
+                                                </span>
+                                            </li>
+                                        @endif
 
                                     @endforeach
 

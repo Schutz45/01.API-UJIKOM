@@ -117,20 +117,6 @@
 
     </div>
 
-    {{-- Pesan sukses --}}
-    @if(session('success'))
-        <div class="m-5 bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-lg shadow-sm text-sm">
-            {{ session('success') }}
-        </div>
-    @endif
-
-    {{-- Pesan error --}}
-    @if(session('error'))
-        <div class="m-5 bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg shadow-sm text-sm">
-            {{ session('error') }}
-        </div>
-    @endif
-
     {{-- Tabel --}}
     <div class="w-full overflow-x-auto">
 

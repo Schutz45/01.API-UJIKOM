@@ -6,6 +6,7 @@ use App\Http\Controllers\PetugasController;
 use App\Http\Controllers\PeminjamController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\NotifikasiController;
+use App\Http\Controllers\ProfileController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -112,4 +113,8 @@ Route::middleware(['auth'])->group(function () {
 
     // TAHAP 4: Badge fitur
     Route::get('/badges', [NotifikasiController::class, 'badges'])->name('badges');
+
+    // Profil sendiri (semua role)
+    Route::put('/profil/foto',   [ProfileController::class, 'updateFoto'])  ->name('profil.foto.update');
+    Route::delete('/profil/foto', [ProfileController::class, 'destroyFoto']) ->name('profil.foto.destroy');
 });

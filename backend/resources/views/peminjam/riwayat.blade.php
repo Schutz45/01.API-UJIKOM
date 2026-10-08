@@ -6,53 +6,6 @@
 @section('content')
 
     {{-- =====================================================
-         ALERT
-    ====================================================== --}}
-    @if(session('success'))
-
-        <div
-            class="mb-5 p-4 rounded-xl
-                   bg-emerald-50 border border-emerald-200
-                   text-emerald-700">
-
-            <div class="flex items-center gap-2">
-
-                <i class="bi bi-check-circle-fill"></i>
-
-                <span>
-                    {{ session('success') }}
-                </span>
-
-            </div>
-
-        </div>
-
-    @endif
-
-
-    @if(session('error'))
-
-        <div
-            class="mb-5 p-4 rounded-xl
-                   bg-red-50 border border-red-200
-                   text-red-700">
-
-            <div class="flex items-center gap-2">
-
-                <i class="bi bi-exclamation-circle-fill"></i>
-
-                <span>
-                    {{ session('error') }}
-                </span>
-
-            </div>
-
-        </div>
-
-    @endif
-
-
-    {{-- =====================================================
         HERO RIWAYAT
     ====================================================== --}}
     <section

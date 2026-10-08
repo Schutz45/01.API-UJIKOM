@@ -35,20 +35,19 @@ class Alat extends Model
     }
 
     /**
-     * Menandai sejumlah unit alat tersedia sebagai rusak.
+     * Menandai unit-unit tertentu sebagai rusak.
      */
-    public function markUnitsAsBroken(int $jumlah): void
+    public function markUnitsAsBroken(array $unitIds): void
     {
-        DB::transaction(function () use ($jumlah) {
+        DB::transaction(function () use ($unitIds) {
             $units = $this->unitAlat()
+                ->whereIn('id', $unitIds)
                 ->where('status', 'tersedia')
                 ->lockForUpdate()
-                ->orderBy('nomor_seri')
-                ->take($jumlah)
                 ->get();
 
-            if ($units->count() < $jumlah) {
-                throw new \Exception("Jumlah unit tersedia tidak mencukupi.");
+            if ($units->count() !== count($unitIds)) {
+                throw new \Exception("Beberapa unit tidak ditemukan atau tidak tersedia untuk ditandai rusak.");
             }
 
             foreach ($units as $unit) {
@@ -58,20 +57,19 @@ class Alat extends Model
     }
 
     /**
-     * Memperbaiki sejumlah unit alat yang rusak.
+     * Memperbaiki unit-unit tertentu yang rusak.
      */
-    public function repairUnits(int $jumlah): void
+    public function repairUnits(array $unitIds): void
     {
-        DB::transaction(function () use ($jumlah) {
+        DB::transaction(function () use ($unitIds) {
             $units = $this->unitAlat()
+                ->whereIn('id', $unitIds)
                 ->where('kondisi', 'rusak')
                 ->lockForUpdate()
-                ->orderBy('nomor_seri')
-                ->take($jumlah)
                 ->get();
 
-            if ($units->count() < $jumlah) {
-                throw new \Exception("Jumlah unit rusak tidak mencukupi.");
+            if ($units->count() !== count($unitIds)) {
+                throw new \Exception("Beberapa unit tidak ditemukan atau tidak dalam kondisi rusak untuk diperbaiki.");
             }
 
             foreach ($units as $unit) {
