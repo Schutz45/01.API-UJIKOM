@@ -1,0 +1,284 @@
+@extends('layouts.app')
+
+@section('title', 'Riwayat Pengembalian - Panel Admin')
+@section('header-title', 'Riwayat Pengembalian Alat')
+
+@section('content')
+
+<div class="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+
+    {{-- Header --}}
+    <div class="p-5 border-b border-gray-200 bg-gray-50">
+
+        <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
+
+            {{-- Judul --}}
+            <div>
+                <h3 class="text-lg font-bold text-gray-800">
+                    Riwayat Pengembalian
+                </h3>
+            </div>
+
+            {{-- Kontrol --}}
+            <div class="flex flex-col lg:flex-row gap-3 w-full xl:w-auto">
+
+                {{-- Filter + Search --}}
+                <form
+                    action="{{ route('admin.pengembalian.index') }}"
+                    method="GET"
+                    class="flex flex-col sm:flex-row sm:flex-wrap gap-2 w-full xl:w-auto"
+                >
+
+                    {{-- Filter Kondisi --}}
+                    <select
+                        name="kondisi"
+                        class="w-full sm:w-auto px-3 py-2 text-sm border border-gray-300 rounded-lg
+                        bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        <option value="">
+                            Semua Kondisi
+                        </option>
+
+                        <option value="baik"
+                            {{ request('kondisi') == 'baik' ? 'selected' : '' }}>
+                            Baik
+                        </option>
+
+                        <option value="rusak"
+                            {{ request('kondisi') == 'rusak' ? 'selected' : '' }}>
+                            Rusak
+                        </option>
+                    </select>
+
+                    {{-- Filter Urutan --}}
+                    <select
+                        name="sort"
+                        class="w-full sm:w-auto px-3 py-2 text-sm border border-gray-300 rounded-lg
+                        bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        <option value="terbaru"
+                            {{ request('sort', 'terbaru') == 'terbaru' ? 'selected' : '' }}>
+                            Terbaru
+                        </option>
+
+                        <option value="terlama"
+                            {{ request('sort') == 'terlama' ? 'selected' : '' }}>
+                            Terlama
+                        </option>
+
+                        <option value="az"
+                            {{ request('sort') == 'az' ? 'selected' : '' }}>
+                            A → Z
+                        </option>
+
+                        <option value="za"
+                            {{ request('sort') == 'za' ? 'selected' : '' }}>
+                            Z → A
+                        </option>
+                    </select>
+
+                    {{-- Search --}}
+                    <div class="flex w-full sm:w-80">
+                        <input
+                            type="text"
+                            name="search"
+                            value="{{ request('search') }}"
+                            placeholder="Cari nama peminjam / kondisi..."
+                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-l-lg
+                            focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+
+                        <button
+                            type="submit"
+                            class="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2
+                            text-sm font-semibold rounded-r-lg transition whitespace-nowrap"
+                        >
+                            Cari
+                        </button>
+                    </div>
+
+                    {{-- Reset --}}
+                    @if(request('search') || request('kondisi') || request('sort'))
+                        <a
+                            href="{{ route('admin.pengembalian.index') }}"
+                            class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-3 py-2
+                            text-sm rounded-lg flex items-center justify-center
+                            transition whitespace-nowrap"
+                        >
+                            Reset
+                        </a>
+                    @endif
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    {{-- Tabel --}}
+    <div class="w-full overflow-x-auto">
+
+        <table class="min-w-[1100px] w-full text-left border-collapse">
+
+            <thead>
+                <tr class="bg-gray-100 text-gray-600 text-sm uppercase tracking-wider">
+
+                    <th class="py-3 px-4 border-b whitespace-nowrap">
+                        Peminjam
+                    </th>
+
+                    <th class="py-3 px-4 border-b whitespace-nowrap">
+                        Alat
+                    </th>
+
+                    <th class="py-3 px-4 border-b whitespace-nowrap">
+                        Rencana Kembali
+                    </th>
+
+                    <th class="py-3 px-4 border-b whitespace-nowrap">
+                        Tanggal Kembali
+                    </th>
+
+                    <th class="py-3 px-4 border-b whitespace-nowrap">
+                        Kondisi
+                    </th>
+
+                    <th class="py-3 px-4 border-b whitespace-nowrap">
+                        Denda
+                    </th>
+
+                    <th class="py-3 px-4 border-b whitespace-nowrap">
+                        Petugas
+                    </th>
+
+                    <th class="py-3 px-4 border-b text-center whitespace-nowrap">
+                        Aksi 
+                    </th>
+
+                </tr>
+            </thead>
+
+            <tbody class="text-gray-700 text-sm">
+
+                @forelse($pengembalians as $pengembalian)
+
+                    <tr class="hover:bg-gray-50 transition align-top">
+
+                        {{-- Peminjam --}}
+                        <td class="py-3 px-4 border-b font-medium text-gray-900 whitespace-nowrap">
+                            {{ $pengembalian->peminjaman->user->name ?? 'User Dihapus' }}
+                        </td>
+
+                        {{-- Alat --}}
+                        <td class="py-3 px-4 border-b whitespace-nowrap">
+
+                            <ul class="list-disc list-inside space-y-1">
+
+                                @foreach($pengembalian->peminjaman->detailPinjam as $detail)
+
+                                    <li class="whitespace-nowrap">
+                                        <span class="font-semibold">
+                                            {{ $detail->alat->nama_alat ?? 'Alat Dihapus' }}
+                                        </span>
+
+                                        <span class="text-xs bg-gray-200 px-1.5 py-0.5 rounded">
+                                            ({{ $detail->jumlah - $detail->unitAlat->where('pivot.kondisi_masuk', 'rusak')->count() }} Baik, {{ $detail->unitAlat->where('pivot.kondisi_masuk', 'rusak')->count() }} Rusak)
+                                        </span>
+                                    </li>
+
+                                @endforeach
+
+                            </ul>
+
+                        </td>
+
+                        {{-- Rencana kembali --}}
+                        <td class="py-3 px-4 border-b text-xs text-gray-500">
+                            {{ $pengembalian->peminjaman->tgl_kembali_plan?->format('d-m-Y') }}
+                        </td>
+
+                        {{-- Tanggal kembali --}}
+                        <td class="py-3 px-4 border-b text-xs whitespace-nowrap">
+                            {{ $pengembalian->tgl_kembali?->format('d-m-Y') }}
+                        </td>
+
+                        {{-- Kondisi --}}
+                        <td class="py-3 px-4 border-b whitespace-nowrap">
+
+                            @if($pengembalian->kondisi_kembali === 'baik')
+
+                                <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800">
+                                    Baik
+                                </span>
+
+                            @elseif($pengembalian->kondisi_kembali === 'rusak')
+
+                                <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                    Rusak
+                                </span>
+
+                            @else
+
+                                <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                                    {{ ucfirst($pengembalian->kondisi_kembali) }}
+                                </span>
+
+                            @endif
+
+                        </td>
+
+                        {{-- Denda --}}
+                        <td class="py-3 px-4 border-b font-semibold whitespace-nowrap">
+                            Rp{{ number_format($pengembalian->denda, 0, ',', '.') }}
+                        </td>
+
+                        {{-- Petugas --}}
+                        <td class="py-3 px-4 border-b whitespace-nowrap">
+                            {{ $pengembalian->petugas->name ?? 'Petugas Dihapus' }}
+                        </td>
+
+                        {{-- Aksi --}} 
+                        <td class="py-3 px-4 border-b text-center min-w-[160px]">
+                            <div class="flex justify-center items-center gap-2 whitespace-nowrap">
+
+                            {{-- Detail --}}
+                                <a href="{{ route('admin.pengembalian.show', $pengembalian->id) }}" class="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded-lg transition" >
+                                    <i class="bi bi-eye-fill mr-1"></i> Detail
+                                </a>
+
+                            </div>
+                        </td>
+
+                    </tr>
+
+                @empty
+
+                    <tr>
+
+                        <td
+                            colspan="8"
+                            class="py-8 text-center text-gray-500"
+                        >
+                            Belum ada riwayat pengembalian.
+                        </td>
+
+                    </tr>
+
+                @endforelse
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+    {{-- Pagination --}}
+    <div class="p-4 border-t border-gray-200 bg-gray-50">
+        {{ $pengembalians->links() }}
+    </div>
+
+</div>
+
+@endsection

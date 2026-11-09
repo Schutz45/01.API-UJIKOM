@@ -1,0 +1,159 @@
+@extends('layouts.app')
+
+@section('title', 'Kelola kategori - Panel Admin')
+@section('header-title', 'Manajemen Kategori Alat')
+
+@section('content')
+
+<div class="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+    <div class="p-5 border-b border-gray-200 bg-gray-50 flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
+        <h3 class="text-lg font-bold text-gray-800">Daftar Kategori Alat</h3>
+
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+
+            <!-- Form Sorting -->
+
+            <form action="{{ route('admin.kategori.index') }}" method="GET" class="flex items-center gap-2">
+                
+                @if(request('search'))
+                    <input type="hidden" name="search" value="{{ request('search') }}">
+                @endif
+
+                <select name="sort"
+                    onchange="this.form.submit()"
+                    class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+
+                    <option value="terbaru" {{ request('sort', 'terbaru') == 'terbaru' ? 'selected' : '' }}>
+                        Terbaru
+                    </option>
+
+                    <option value="terlama" {{ request('sort') == 'terlama' ? 'selected' : '' }}>
+                        Terlama
+                    </option>
+
+                    <option value="az" {{ request('sort') == 'az' ? 'selected' : '' }}>
+                        A → Z
+                    </option>
+
+                    <option value="za" {{ request('sort') == 'za' ? 'selected' : '' }}>
+                        Z → A
+                    </option>
+
+                </select>
+            </form>
+
+            <!-- Form Search -->
+
+            <form action="{{ route('admin.kategori.index') }}" method="GET" class="flex w-full sm:w-80">
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama kategori..."
+                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <button type="submit" class="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 text-sm font-semibold rounded-r-lg transition whitespace-nowrap">
+                        Cari
+                    </button>
+                    @if(request('search'))
+                        <a href="{{ route('admin.kategori.index') }}"
+                        class="ml-2 bg-gray-300 hover:bg-gray-400 text-gray-700 px-3 py-2 text-sm rounded-lg flex items-center transition whitespace-nowrap">
+                            Reset
+                        </a>
+                    @endif
+            </form>
+
+
+            <!-- Tombol Tambah -->
+
+            <a href="{{ route('admin.kategori.create') }}"
+            class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition whitespace-nowrap">
+                + Tambah Kategori
+            </a>
+
+        </div>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="min-w-[600px] w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-gray-100 text-gray-600 text-sm uppercase tracking-wider">
+                    <th class="py-3 px-4 border-b w-16 text-center whitespace-nowrap">No</th>
+                    <th class="py-3 px-4 border-b whitespace-nowrap">Nama Kategori</th>
+                    <th class="py-3 px-4 border-b w-32 whitespace-nowrap">Jumlah Alat</th>
+                    <th class="py-3 px-4 border-b w-40 whitespace-nowrap">Lihat Alat</th>
+                    <th class="py-3 px-4 border-b w-48 whitespace-nowrap">Aksi</th>
+                </tr>
+            </thead>
+            <tbody class="text-gray-700 text-sm">
+                @forelse($kategoris as $index => $kategori)
+
+                    <tr class="hover:bg-gray-50 transition">
+
+                        {{-- No --}}
+                        <td class="py-3 px-4 border-b text-center whitespace-nowrap">
+                            {{ $kategoris->firstItem() + $index }}
+                        </td>
+
+                        {{-- Nama Kategori --}}
+                        <td class="py-3 px-4 border-b font-medium text-gray-900 whitespace-nowrap">
+                            {{ $kategori->nama_kategori }}
+                        </td>
+
+                        {{-- Jumlah Alat --}}
+                        <td class="py-3 px-4 border-b whitespace-nowrap">
+                            {{ $kategori->alat_count }} alat
+                        </td>
+
+                        {{-- Lihat Alat --}}
+                        <td class="py-3 px-4 border-b">
+                            <a href="{{ route('admin.kategori.alat', $kategori) }}"
+                                class="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition">
+                                Lihat Alat
+                            </a>
+                        </td>
+
+                        {{-- Aksi --}}
+                        <td class="py-3 px-4 border-b">
+                            <div class="flex items-center gap-2 whitespace-nowrap">
+
+                                <a href="{{ route('admin.kategori.edit', $kategori->id) }}"
+                                    class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition">
+                                    Edit
+                                </a>
+
+                                <form action="{{ route('admin.kategori.destroy', $kategori->id) }}"
+                                    method="POST"
+                                    onsubmit="return confirm('Yakin ingin menghapus kategori ini?')">
+
+                                    @csrf
+                                    @method('DELETE')
+
+                                    <button type="submit"
+                                        class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition">
+                                        Hapus
+                                    </button>
+
+                                </form>
+
+                            </div>
+                        </td>
+
+                    </tr>
+
+                @empty
+
+                    <tr>
+                        <td colspan="5" class="py-4 text-center text-gray-500">
+                            Belum ada data kategori.
+                        </td>
+                    </tr>
+
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+
+    <div class="p-4 border-t border-gray-200 bg-gray-50">
+        {{ $kategoris->links() }}
+    </div>
+
+</div>
+@endsection

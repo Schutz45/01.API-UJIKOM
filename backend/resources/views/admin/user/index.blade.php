@@ -1,0 +1,280 @@
+@extends('layouts.app')
+
+@section('title', 'Kelola User - Panel Admin')
+@section('header-title', 'Manajemen Pengguna Sistem')
+
+@section('content')
+
+    <div class="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+
+        <!-- Header tabel -->
+        <div class="p-5 border-b border-gray-200 bg-gray-50 flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
+
+            <h3 class="text-lg font-bold text-gray-800">
+                Daftar Pengguna Sistem
+            </h3>
+            <div class="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 w-full lg:w-auto">
+
+                <!-- Form Search + Filter -->
+                <form action="{{ route('admin.user.index') }}" method="GET"
+                    class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto">
+
+                    <!-- Filter Role -->
+                    <select
+                        name="role"
+                        class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        <option value="all" {{ request('role', 'all') == 'all' ? 'selected' : '' }}>
+                            Semua Role
+                        </option>
+
+                        <option value="admin" {{ request('role') == 'admin' ? 'selected' : '' }}>
+                            Admin
+                        </option>
+
+                        <option value="petugas" {{ request('role') == 'petugas' ? 'selected' : '' }}>
+                            Petugas
+                        </option>
+
+                        <option value="peminjam" {{ request('role') == 'peminjam' ? 'selected' : '' }}>
+                            Peminjam
+                        </option>
+                    </select>
+
+                    <!-- Urutan -->
+                    <select
+                        name="sort"
+                        class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        <option value="terbaru" {{ request('sort', 'terbaru') == 'terbaru' ? 'selected' : '' }}>
+                            Terbaru
+                        </option>
+
+                        <option value="terlama" {{ request('sort') == 'terlama' ? 'selected' : '' }}>
+                            Terlama
+                        </option>
+
+                        <option value="az" {{ request('sort') == 'az' ? 'selected' : '' }}>
+                            A → Z
+                        </option>
+
+                        <option value="za" {{ request('sort') == 'za' ? 'selected' : '' }}>
+                            Z → A
+                        </option>
+                    </select>
+
+                    <!-- Search -->
+                    <input
+                        type="text"
+                        name="search"
+                        value="{{ request('search') }}"
+                        placeholder="Cari nama, email, role..."
+                        class="w-full sm:w-64 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+
+                    <!-- Tombol Cari -->
+                    <button
+                        type="submit"
+                        class="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 text-sm font-semibold rounded-lg transition whitespace-nowrap"
+                    >
+                        Cari
+                    </button>
+
+                    <!-- Reset -->
+                    @if(request('search') || request('role') || request('sort'))
+                        <a
+                            href="{{ route('admin.user.index') }}"
+                            class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-3 py-2 text-sm rounded-lg flex items-center justify-center transition whitespace-nowrap"
+                        >
+                            Reset
+                        </a>
+                    @endif
+
+                </form>
+
+                <!-- Tombol Tambah User -->
+                <a
+                    href="{{ route('admin.user.create') }}"
+                    class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition whitespace-nowrap text-center"
+                >
+                    + Tambah User
+                </a>
+
+            </div>
+        </div>
+
+        <!-- Tabel -->
+        <div class="w-full overflow-x-auto">
+
+            <table class="min-w-[800px] w-full text-left border-collapse">
+
+                <thead>
+                    <tr class="bg-gray-100 text-gray-600 text-sm uppercase tracking-wider">
+                        <th class="py-3 px-4 border-b whitespace-nowrap">Nama</th>
+                        <th class="py-3 px-4 border-b whitespace-nowrap">Email</th>
+                        <th class="py-3 px-4 border-b whitespace-nowrap">No. HP</th>
+                        <th class="py-3 px-4 border-b whitespace-nowrap">Hak Akses</th>
+                        <th class="py-3 px-4 border-b whitespace-nowrap">Status Akun</th>
+                        <th class="py-3 px-4 border-b whitespace-nowrap">Aksi</th>
+                    </tr>
+                </thead>
+
+                <tbody class="text-gray-700 text-sm">
+
+                    @forelse($users as $user)
+
+                        <tr class="hover:bg-gray-50 transition">
+
+                            <td class="py-3 px-4 border-b">
+                                <div class="flex items-center gap-3">
+
+                                    @if($user->foto_profile)
+                                        <img
+                                            src="{{ asset('storage/' . $user->foto_profile) }}"
+                                            alt="Foto {{ $user->name }}"
+                                            class="w-10 h-10 rounded-full object-cover border border-gray-200"
+                                        >
+                                    @else
+                                        <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-semibold">
+                                            {{ strtoupper(substr($user->name, 0, 1)) }}
+                                        </div>
+                                    @endif
+
+                                    <div class="flex flex-col">
+                                        <span class="font-medium text-gray-900">
+                                            {{ $user->name }}
+                                        </span>
+                                        @if($user->role === 'peminjam')
+                                            <span class="text-[10px] text-gray-400">
+                                            </span>
+                                        @endif
+                                    </div>
+
+                                </div>
+                            </td>
+
+                            <td class="py-3 px-4 border-b">
+                                {{ $user->email }}
+                            </td>
+
+                            <td class="py-3 px-4 border-b">
+                                {{ $user->no_hp ?? '-' }}
+                            </td>
+
+
+                            <td class="py-3 px-4 border-b">
+
+                                <span class="px-2.5 py-1 text-xs font-semibold rounded-full
+                                    @if($user->role == 'admin')
+                                        bg-purple-100 text-purple-800
+                                    @elseif($user->role == 'petugas')
+                                        bg-blue-100 text-blue-800
+                                    @else
+                                        bg-green-100 text-green-800
+                                    @endif">
+
+                                    {{ ucfirst($user->role) }}
+
+                                </span>
+
+                            </td>
+
+                            {{-- STATUS AKUN --}}
+                            <td class="py-3 px-4 border-b">
+                                @if($user->isAktif())
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                        Aktif
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-200 text-gray-600">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                                        Nonaktif
+                                    </span>
+                                @endif
+                            </td>
+
+                            <td class="py-3 px-4 border-b">
+
+                                <div class="flex items-center gap-2 whitespace-nowrap">
+
+                                    <!-- Tombol Edit -->
+                                    <a href="{{ route('admin.user.edit', $user->id) }}"
+                                       class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition">
+                                        Edit
+                                    </a>
+
+                                    <!-- Tombol Hapus -->
+                                    <form action="{{ route('admin.user.destroy', $user->id) }}"
+                                          method="POST"
+                                          onsubmit="return confirm('Yakin ingin menghapus User ini? {{ $user->id == auth()->id() ? 'Ini adalah akun Anda sendiri!' : '' }}')">
+
+                                        @csrf
+                                        @method('DELETE')
+
+                                        <button type="submit"
+                                            class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition {{ $user->id == auth()->id() ? 'opacity-50 cursor-not-allowed' : '' }}"
+                                            {{ $user->id == auth()->id() ? 'disabled' : '' }}>
+                                            Hapus
+                                        </button>
+
+                                    </form>
+
+                                    <!-- Tombol Aktifkan / Nonaktifkan -->
+                                    @if($user->id == auth()->id())
+                                        <span class="text-[10px] italic text-gray-400 px-2 py-1.5">
+                                            Akun Anda
+                                        </span>
+                                    @elseif($user->isAktif())
+                                        <form action="{{ route('admin.user.status', $user->id) }}"
+                                              method="POST"
+                                              onsubmit="return confirm('Yakin ingin menonaktifkan akun {{ $user->name }}? Akun ini tidak akan dapat login sementara.')">
+                                            @csrf
+                                            @method('PUT')
+                                            <button type="submit"
+                                                class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition">
+                                                Nonaktifkan
+                                            </button>
+                                        </form>
+                                    @else
+                                        <form action="{{ route('admin.user.status', $user->id) }}"
+                                              method="POST"
+                                              onsubmit="return confirm('Aktifkan kembali akun {{ $user->name }}?')">
+                                            @csrf
+                                            @method('PUT')
+                                            <button type="submit"
+                                                class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition">
+                                                Aktifkan
+                                            </button>
+                                        </form>
+                                    @endif
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+
+                    @empty
+
+                        <tr>
+                            <td colspan="6" class="py-4 text-center text-gray-500">
+                                Belum ada pengguna terdaftar.
+                            </td>
+                        </tr>
+
+                    @endforelse
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <div class="p-4 border-t border-gray-200 bg-gray-50">
+            {{ $users->links() }}
+        </div>
+
+    </div>
+
+@endsection

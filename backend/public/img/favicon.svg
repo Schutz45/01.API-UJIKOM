@@ -1,0 +1,7 @@
+<svg width="32" height="32" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+    <!-- Simplified Shield Shape -->
+    <path d="M256 40L80 110V250C80 360 160 440 256 472C352 440 432 360 432 250V110L256 40Z" fill="#0056b3"/>
+    <!-- Simplified Wrench/Icon -->
+    <path d="M256 180C210 180 180 210 180 256C180 302 210 332 256 332C302 332 332 302 332 256C332 210 302 180 256 180Z" fill="white" stroke="#0056b3" stroke-width="20"/>
+    <rect x="236" y="120" width="40" height="200" fill="white" transform="rotate(45 256 256)"/>
+</svg>

@@ -1,0 +1,38 @@
+{
+  "sheets": [
+    {
+      "name": "Test Cases SIPPSD",
+      "rows": [
+        ["Test Case Aplikasi Peminjaman Alat (SIPPSD) - Hasil Pengetesan Sistem"],
+        [],
+        ["Kelola Alat - Positif & Negatif"],
+        ["ID", "Scenario", "Title", "Steps", "Test Data", "Expected Result", "Actual Result", "Status"],
+        ["ALAT-1", "Tambah Alat", "Tambah alat baru valid", "1. Buka Kelola Alat\n2. Klik Tambah\n3. Isi data valid\n4. Simpan", "Data alat valid", "Alat berhasil disimpan", "Alat tersimpan di DB", "PASS"],
+        ["ALAT-2", "Tambah Alat", "Tambah alat tanpa nama", "1. Buka Tambah Alat\n2. Kosongkan Nama\n3. Simpan", "Nama: [kosong]", "Muncul validasi 'Nama wajib diisi'", "Pesan validasi muncul", "PASS"],
+        ["ALAT-3", "Tandai Rusak", "Tandai alat rusak valid", "1. Edit Alat\n2. Masukkan jumlah rusak\n3. Klik Tandai Rusak", "Jumlah: 2 (Stok: 10)", "Stok baik berkurang 2, stok rusak bertambah 2", "Stok terupdate otomatis", "PASS"],
+        ["ALAT-4", "Tandai Rusak", "Jumlah rusak melebihi stok", "1. Edit Alat\n2. Masukkan jumlah rusak > stok\n3. Klik Tandai Rusak", "Jumlah: 15 (Stok: 10)", "Muncul error 'Jumlah tidak boleh melebihi stok'", "Error 'Jumlah tidak boleh...' muncul", "PASS"],
+        ["ALAT-5", "Hapus Alat", "Hapus alat dengan riwayat pinjam", "1. Klik Hapus pada alat yang pernah dipinjam", "Alat ID: 1", "Ditolak: 'Alat tidak dapat dihapus karena memiliki riwayat'", "Muncul pesan blokir penghapusan", "PASS"],
+        [],
+        ["Kelola Kategori"],
+        ["ID", "Scenario", "Title", "Steps", "Test Data", "Expected Result", "Actual Result", "Status"],
+        ["KAT-1", "Tambah Kategori", "Kategori nama duplikat", "1. Tambah Kategori\n2. Masukkan nama yang sudah ada\n3. Simpan", "Nama: Elektronik (Existing)", "Ditolak: 'Nama kategori sudah terdaftar'", "Pesan validasi unik muncul", "PASS"],
+        ["KAT-2", "Hapus Kategori", "Hapus kategori berisi alat", "1. Klik Hapus pada kategori yang masih ada alatnya", "Kategori: Mesin", "Ditolak: 'Kategori digunakan oleh data alat'", "Blokir penghapusan berhasil", "PASS"],
+        [],
+        ["Peminjaman"],
+        ["ID", "Scenario", "Title", "Steps", "Test Data", "Expected Result", "Actual Result", "Status"],
+        ["PINJAM-1", "Tambah Pinjam", "Stok tidak mencukupi", "1. Tambah Peminjaman\n2. Pilih jumlah > stok tersedia", "Jumlah: 5, Stok: 2", "Gagal simpan: 'Stok alat tidak mencukupi'", "Gagal simpan dengan pesan error", "PASS"],
+        ["PINJAM-2", "Update Status", "Setujui pinjaman (Dipinjam)", "1. Klik Setujui/Ubah status ke 'dipinjam'", "Status: dipinjam", "Stok barang otomatis berkurang", "Status berubah & stok berkurang", "PASS"],
+        [],
+        ["Pengembalian"],
+        ["ID", "Scenario", "Title", "Steps", "Test Data", "Expected Result", "Actual Result", "Status"],
+        ["KEMBALI-1", "Proses Kembali", "Tanggal kembali tidak valid", "1. Klik Proses Pengembalian\n2. Isi tanggal sebelum tanggal pinjam", "Tgl Kembali < Tgl Pinjam", "Ditolak: 'Tanggal tidak boleh sebelum tanggal pinjam'", "Validasi tanggal muncul", "PASS"],
+        ["KEMBALI-2", "Proses Kembali", "Hitung denda telat", "1. Proses pengembalian melewati batas rencana", "Rencana: H-1, Kembali: Hari ini", "Otomatis muncul denda Rp1.000/hari", "Denda terhitung Rp1.000", "PASS"],
+        ["KEMBALI-3", "Proses Kembali", "Pengembalian barang rusak (Partial)", "1. Pilih kondisi: Rusak\n2. Isi jumlah rusak < total pinjam", "Pinjam: 5, Rusak: 2", "Stok baik kembali 3, stok rusak tambah 2", "Stok terbagi (3 baik, 2 rusak)", "PASS"],
+        ["KEMBALI-4", "Proses Kembali", "Pengembalian barang rusak (Kosong)", "1. Pilih kondisi: Rusak\n2. Kosongkan jumlah rusak", "Pinjam: 5, Rusak: [kosong]", "Seluruh unit (5) dianggap rusak", "Stok rusak bertambah 5", "PASS"],
+        ["KEMBALI-5", "Hapus Kembali", "Batalkan pengembalian", "1. Hapus data pengembalian", "ID Pengembalian: 10", "Status pinjam balik ke 'dipinjam', stok ditarik kembali", "Status & stok kembali ke semula", "PASS"]
+      ],
+      "column_widths": [10, 20, 30, 40, 25, 35, 35, 10],
+      "merges": ["A1:H1", "A3:H3", "A11:H11", "A15:H15", "A19:H19"]
+    }
+  ]
+}

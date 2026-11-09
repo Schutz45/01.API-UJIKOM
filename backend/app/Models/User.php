@@ -1,0 +1,75 @@
+<?php
+
+namespace App\Models;
+
+// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Hash;
+
+class User extends Authenticatable
+{
+    /** @use HasFactory<UserFactory> */
+    use HasApiTokens, Notifiable;
+
+    protected $table = 'users';
+
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'role',
+        'status_akun',
+        'no_hp',
+        'alamat',
+        'foto_profile'
+    ];
+
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' =>  'datetime',
+            'password'          =>  'hashed',
+            // Laravel otomatis meng-hash teks apapun yang masuk ke properti password!
+        ];
+    }
+
+    public function peminjaman(): HasMany {
+        return $this->hasMany(Peminjaman::class);
+    }
+
+    public function logAktivitas(): HasMany {
+        return $this->hasMany(LogAktivitas::class);
+    }
+
+    public function notifikasi(): HasMany {
+        return $this->hasMany(Notifikasi::class);
+    }
+
+    /*
+    |----------------------------------------------------------------------
+    | Helper: jumlah notifikasi yang belum dibaca (untuk ikon Lonceng)
+    |----------------------------------------------------------------------
+    */
+    public function jumlahNotifikasiBelumDibaca(): int
+    {
+        return (int) $this->notifikasi()->where('dibaca', false)->count();
+    }
+
+    /*
+    |----------------------------------------------------------------------
+    | Helper: cek apakah akun aktif
+    |----------------------------------------------------------------------
+    */
+    public function isAktif(): bool
+    {
+        return $this->status_akun === 'aktif';
+    }
+}

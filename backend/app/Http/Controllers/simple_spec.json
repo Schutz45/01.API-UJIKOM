@@ -1,0 +1,12 @@
+{
+  "sheets": [
+    {
+      "name": "Test Cases",
+      "rows": [
+        ["ID", "Scenario", "Title", "Steps", "Test Data", "Expected Result", "Status"],
+        ["ALAT-1", "Tambah Alat", "Tambah alat valid", "Isi data valid", "Data valid", "Alat tersimpan", "PASS"],
+        ["PINJAM-1", "Tambah Pinjam", "Stok kurang", "Input jumlah > stok", "Jumlah > Stok", "Gagal: Stok tidak cukup", "PASS"]
+      ]
+    }
+  ]
+}
