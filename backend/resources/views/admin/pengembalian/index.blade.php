@@ -154,7 +154,7 @@
                     </th>
 
                     <th class="py-3 px-4 border-b text-center whitespace-nowrap">
-                        Aksi 
+                        Aksi
                     </th>
 
                 </tr>
@@ -168,7 +168,37 @@
 
                         {{-- Peminjam --}}
                         <td class="py-3 px-4 border-b font-medium text-gray-900 whitespace-nowrap">
-                            {{ $pengembalian->peminjaman->user->name ?? 'User Dihapus' }}
+                            <div class="flex items-center gap-3">
+
+                                {{-- Foto Profil --}}
+                                @if($pengembalian->peminjaman?->user?->foto_profile)
+                                    <img
+                                        src="{{ asset('storage/' . $pengembalian->peminjaman->user->foto_profile) }}"
+                                        alt="Foto {{ $pengembalian->peminjaman->user->name }}"
+                                        class="w-10 h-10 rounded-full object-cover border border-gray-200 shrink-0"
+                                    >
+                                @else
+                                    <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-semibold shrink-0">
+                                        {{ strtoupper(substr($pengembalian->peminjaman?->user?->name ?? 'U', 0, 1)) }}
+                                    </div>
+                                @endif
+
+                                {{-- Nama Peminjam --}}
+                                <button
+                                    type="button"
+                                    onclick="showUserModal({
+                                        name: {{ Js::from($pengembalian->peminjaman?->user?->name ?? 'User Dihapus') }},
+                                        email: {{ Js::from($pengembalian->peminjaman?->user?->email ?? '-') }},
+                                        no_hp: {{ Js::from($pengembalian->peminjaman?->user?->no_hp ?? '-') }},
+                                        alamat: {{ Js::from($pengembalian->peminjaman?->user?->alamat ?? '-') }},
+                                        foto: {{ Js::from($pengembalian->peminjaman?->user?->foto_profile ? asset('storage/' . $pengembalian->peminjaman->user->foto_profile) : 'https://ui-avatars.com/api/?name=User') }}
+                                    })"
+                                    class="text-blue-600 hover:text-blue-800 hover:underline text-left font-bold transition"
+                                >
+                                    {{ $pengembalian->peminjaman?->user?->name ?? 'User Dihapus' }}
+                                </button>
+
+                            </div>
                         </td>
 
                         {{-- Alat --}}
@@ -239,7 +269,7 @@
                             {{ $pengembalian->petugas->name ?? 'Petugas Dihapus' }}
                         </td>
 
-                        {{-- Aksi --}} 
+                        {{-- Aksi --}}
                         <td class="py-3 px-4 border-b text-center min-w-[160px]">
                             <div class="flex justify-center items-center gap-2 whitespace-nowrap">
 
@@ -280,5 +310,154 @@
     </div>
 
 </div>
+
+{{-- Modal Profil Peminjam --}}
+<div id="userProfileModal" class="fixed inset-0 z-[9999] hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+
+        <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
+             aria-hidden="true"
+             onclick="closeUserModal()"></div>
+
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+        <div class="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-2xl shadow-xl sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-gray-200">
+
+            {{-- Header --}}
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-bold text-white">
+                        Profil Peminjam
+                    </h3>
+
+                    <button type="button"
+                            onclick="closeUserModal()"
+                            class="text-white hover:text-gray-200 transition">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            {{-- Isi Profil --}}
+            <div class="px-6 py-6 bg-white">
+
+                <div class="flex flex-col items-center sm:flex-row sm:items-start gap-6">
+
+                    <img id="modal-foto"
+                         src=""
+                         alt="Profile"
+                         class="w-24 h-24 rounded-2xl object-cover border-4 border-gray-100 shadow-sm">
+
+                    <div class="flex-1 text-center sm:text-left">
+                        <h4 id="modal-name"
+                            class="text-xl font-bold text-gray-900"></h4>
+
+                        <p class="text-sm font-medium text-blue-600">
+                            Peminjam
+                        </p>
+                    </div>
+
+                </div>
+
+                <hr class="my-6 border-gray-100">
+
+                {{-- Informasi --}}
+                <div class="grid grid-cols-1 gap-5">
+
+                    {{-- Email --}}
+                    <div class="flex items-start gap-3 text-sm">
+                        <div class="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 shrink-0">
+                            <i class="bi bi-envelope"></i>
+                        </div>
+
+                        <div>
+                            <p class="text-xs text-gray-400 font-medium uppercase tracking-wider">
+                                Email
+                            </p>
+                            <p id="modal-email" class="text-gray-700 font-medium"></p>
+                        </div>
+                    </div>
+
+                    {{-- Nomor HP --}}
+                    <div class="flex items-start gap-3 text-sm">
+                        <div class="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 shrink-0">
+                            <i class="bi bi-telephone"></i>
+                        </div>
+
+                        <div>
+                            <p class="text-xs text-gray-400 font-medium uppercase tracking-wider">
+                                No. Telepon
+                            </p>
+                            <p id="modal-no-hp" class="text-gray-700 font-medium"></p>
+                        </div>
+                    </div>
+
+                    {{-- Alamat --}}
+                    <div class="flex items-start gap-3 text-sm">
+                        <div class="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 shrink-0">
+                            <i class="bi bi-geo-alt"></i>
+                        </div>
+
+                        <div>
+                            <p class="text-xs text-gray-400 font-medium uppercase tracking-wider">
+                                Alamat
+                            </p>
+                            <p id="modal-alamat" class="text-gray-700 font-medium"></p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            {{-- Footer --}}
+            <div class="bg-gray-50 px-6 py-4 flex justify-end">
+                <button type="button"
+                        onclick="closeUserModal()"
+                        class="px-5 py-2 text-sm font-bold text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition shadow-sm">
+                    Tutup
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+
+
+<script>
+    function showUserModal(user) {
+        document.getElementById('modal-name').innerText = user.name || 'User Dihapus';
+        document.getElementById('modal-email').innerText = user.email || '-';
+        document.getElementById('modal-no-hp').innerText = user.no_hp || '-';
+        document.getElementById('modal-alamat').innerText = user.alamat || '-';
+
+        const foto = document.getElementById('modal-foto');
+
+        foto.onerror = function () {
+            foto.onerror = null;
+            foto.src = 'https://ui-avatars.com/api/?name=User';
+        };
+
+        foto.src = user.foto || 'https://ui-avatars.com/api/?name=User';
+
+        document.getElementById('userProfileModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeUserModal() {
+        document.getElementById('userProfileModal').classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+
+    window.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeUserModal();
+        }
+    });
+</script>
+
+
+
 
 @endsection

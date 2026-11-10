@@ -40,10 +40,10 @@ class AdminController extends Controller
             ->get();
 
         return view('admin.dashboard', compact(
-            'totalAlat', 
-            'totalUsers', 
-            'totalKategori', 
-            'totalPeminjaman', 
+            'totalAlat',
+            'totalUsers',
+            'totalKategori',
+            'totalPeminjaman',
             'totalPeminjamanAktif',
             'totalPeminjamanSelesai',
             'totalPeminjamanTerlambat',
@@ -205,7 +205,7 @@ class AdminController extends Controller
             // Generate unit otomatis
             $stokBaik  = (int) $request->stok;
             $stokRusak = (int) ($request->stok_rusak ?? 0);
-            
+
             $prefix = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $alat->nama_alat));
             $prefix = substr($prefix, 0, 4);
 
@@ -244,7 +244,7 @@ class AdminController extends Controller
                 $query->orderBy('nomor_seri');
             }
         ])->findOrFail($id);
-        
+
         $kategoris  =   Kategori::all();
         return view('admin.alat.edit', compact('alat', 'kategoris'));
     }
@@ -443,12 +443,13 @@ class AdminController extends Controller
     public function storeUser(Request $request)
     {
         $request->validate([
-            'name'         => 'required|string|max:255',
-            'email'        => 'required|string|email|max:255|unique:users,email',
-            'password'     => 'required|string|min:6',
-            'role'         => 'required|in:admin,petugas,peminjam',
-            'no_hp'        => 'nullable|string|max:20',
-            'foto_profile' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'name'          => 'required|string|max:255',
+            'email'         => 'required|string|email|max:255|unique:users,email',
+            'password'      => 'required|string|min:6',
+            'role'          => 'required|in:admin,petugas,peminjam',
+            'no_hp'         => ['nullable', 'string', 'max:20', 'regex:/^[0-9]+$/'],
+            'alamat'        => 'nullable|string|max:1000',
+            'foto_profile'  => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ], [
             'name.required'     => 'Nama wajib diisi.',
             'email.required'    => 'Email wajib diisi.',
@@ -466,12 +467,13 @@ class AdminController extends Controller
         }
 
         User::create([
-            'name'         => $request->name,
-            'email'        => $request->email,
-            'password'     => Hash::make($request->password),
-            'role'         => $request->role,
-            'no_hp'        => $request->no_hp,
-            'foto_profile' => $fotoProfile,
+            'name'          => $request->name,
+            'email'         => $request->email,
+            'password'      => Hash::make($request->password),
+            'role'          => $request->role,
+            'no_hp'         => $request->no_hp,
+            'alamat'        => $request->alamat,
+            'foto_profile'  => $fotoProfile,
         ]);
 
         return redirect()
@@ -502,7 +504,8 @@ class AdminController extends Controller
             ],
 
             'role'         => 'required|in:admin,petugas,peminjam',
-            'no_hp'        => 'nullable|string|max:20',
+            'no_hp'        => ['nullable', 'string', 'max:20', 'regex:/^[0-9]+$/'],
+            'alamat'       => 'nullable|string|max:1000',
             'password'     => 'nullable|string|min:6',
             'foto_profile' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ], [
@@ -517,6 +520,7 @@ class AdminController extends Controller
             'name'  => $request->name,
             'email' => $request->email,
             'role'  => $request->role,
+            'alamat' => $request->alamat,
             'no_hp' => $request->no_hp,
         ];
 
@@ -661,7 +665,7 @@ class AdminController extends Controller
         ]);
 
         $kategori->update([
-             'nama_kategori' =>  $request->nama_kategori, 
+             'nama_kategori' =>  $request->nama_kategori,
         ]);
 
         return redirect()->route('admin.kategori.index')->with('success', 'Kategori berhasil diperbarui.');
@@ -1051,7 +1055,7 @@ class AdminController extends Controller
             // Kembalikan stok unit alat
             foreach ($peminjaman->detailPinjam as $detail) {
                 $alat = $detail->alat;
-                
+
                 // Ambil unit yang dipinjam
                 $units = $detail->unitAlat;
 
@@ -1059,7 +1063,7 @@ class AdminController extends Controller
                 // Update kondisi masing-masing unit
                 foreach ($units as $unit) {
                     $kondisi = $request->unit_kondisi[$unit->id] ?? 'baik';
-                    
+
                     if ($kondisi === 'rusak') {
                         $unit->update(['status' => 'rusak', 'kondisi' => 'rusak']);
                         $detail->unitAlat()->updateExistingPivot($unit->id, ['kondisi_masuk' => 'rusak']);

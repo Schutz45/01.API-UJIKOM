@@ -225,7 +225,7 @@
                             font-extrabold
                             text-slate-800">
 
-                        {{ $peminjamans->where('status', 'dipinjam')->count() }}
+                        {{ $peminjamans->whereIn('status', ['dipinjam', 'telat'])->count() }}
 
                     </p>
 
@@ -505,6 +505,29 @@
 
                     </span>
 
+                @elseif($peminjaman->status === 'ditolak')
+
+                    <span
+                        class="inline-flex
+                            items-center
+                            gap-1.5
+                            px-3 py-1.5
+                            rounded-full
+                            bg-red-100
+                            text-red-700
+                            text-xs
+                            font-semibold">
+
+                        <span
+                            class="w-1.5 h-1.5
+                                rounded-full
+                                bg-red-500">
+                        </span>
+
+                        Ditolak
+
+                    </span>
+
 
                 @else
 
@@ -643,6 +666,8 @@
                                 Terlambat
                             @elseif($peminjaman->status === 'dikembalikan')
                                 Dikembalikan
+                            @elseif($peminjaman->status === 'ditolak')
+                                Ditolak
                             @else
                                 {{ ucfirst($peminjaman->status) }}
                             @endif
@@ -776,8 +801,8 @@
                                                         @php
                                                             $kondisiMasuk = $unit->pivot->kondisi_masuk;
                                                             $isRusak = $kondisiMasuk === 'rusak';
-                                                            $badgeClass = $isRusak 
-                                                                ? 'bg-red-100 text-red-700 border-red-200' 
+                                                            $badgeClass = $isRusak
+                                                                ? 'bg-red-100 text-red-700 border-red-200'
                                                                 : ($kondisiMasuk === 'baik' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-700 border-slate-200');
                                                         @endphp
                                                         <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border {{ $badgeClass }}">
@@ -790,6 +815,8 @@
                                                         <span class="text-xs text-slate-400 italic">
                                                             @if($peminjaman->status === 'diajukan')
                                                                 Menunggu alokasi petugas
+                                                            @elseif($peminjaman->status === 'ditolak')
+                                                                Pengajuan ditolak, unit tidak dialokasikan
                                                             @else
                                                                 Unit tidak terdata
                                                             @endif

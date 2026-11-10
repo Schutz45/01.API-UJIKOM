@@ -24,7 +24,8 @@ class User extends Authenticatable
         'status_akun',
         'no_hp',
         'alamat',
-        'foto_profile'
+        'foto_profile',
+        'banner_profile',
     ];
 
     protected $hidden = [

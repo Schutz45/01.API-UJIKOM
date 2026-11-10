@@ -140,15 +140,19 @@
                                         </div>
                                     @endif
 
-                                    <div class="flex flex-col">
-                                        <span class="font-medium text-gray-900">
-                                            {{ $user->name }}
-                                        </span>
-                                        @if($user->role === 'peminjam')
-                                            <span class="text-[10px] text-gray-400">
-                                            </span>
-                                        @endif
-                                    </div>
+                                    <button
+                                        type="button"
+                                        onclick="showAdminUserProfile(this)"
+                                        data-name="{{ $user->name }}"
+                                        data-email="{{ $user->email ?? '-' }}"
+                                        data-no-hp="{{ $user->no_hp ?? '-' }}"
+                                        data-alamat="{{ $user->alamat ?? '-' }}"
+                                        data-foto="{{ $user->foto_profile ? asset('storage/' . $user->foto_profile) : '' }}"
+                                        data-role="{{ ucfirst($user->role) }}"
+                                        data-status="{{ $user->isAktif() ? 'Aktif' : 'Nonaktif' }}"
+                                        class="font-medium text-blue-600 hover:text-blue-800 hover:underline text-left transition">
+                                        {{ $user->name }}
+                                    </button>
 
                                 </div>
                             </td>
@@ -276,5 +280,208 @@
         </div>
 
     </div>
+
+    {{-- Modal Profil Pengguna --}}
+<div id="adminUserProfileModal"
+    class="fixed inset-0 z-[9999] hidden overflow-y-auto"
+    aria-labelledby="modal-title"
+    role="dialog"
+    aria-modal="true">
+
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+
+        <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
+            aria-hidden="true"
+            onclick="closeAdminUserProfile()">
+        </div>
+
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen"
+            aria-hidden="true">&#8203;</span>
+
+        <div class="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-2xl shadow-xl sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-gray-200">
+
+            {{-- Header --}}
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-bold text-white">
+                        Profil Pengguna
+                    </h3>
+
+                    <button type="button"
+                        onclick="closeAdminUserProfile()"
+                        class="text-white hover:text-gray-200 transition">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            {{-- Isi Profil --}}
+            <div class="px-6 py-6 bg-white">
+
+                <div class="flex flex-col items-center sm:flex-row sm:items-start gap-6">
+
+                    {{-- Foto Profil --}}
+                    <div id="admin-modal-foto-fallback"
+                        class="hidden w-24 h-24 rounded-2xl bg-gray-200 text-gray-600
+                        flex items-center justify-center text-3xl font-bold border-4
+                        border-gray-100 shadow-sm shrink-0">
+                    </div>
+
+                    <img id="admin-modal-foto"
+                        src=""
+                        alt="Foto Profil"
+                        class="w-24 h-24 rounded-2xl object-cover border-4 border-gray-100 shadow-sm shrink-0">
+
+                    <div class="flex-1 text-center sm:text-left">
+                        <h4 id="admin-modal-name"
+                            class="text-xl font-bold text-gray-900">
+                        </h4>
+
+                        <p id="admin-modal-role"
+                            class="text-sm font-medium text-blue-600">
+                        </p>
+
+                        <span id="admin-modal-status"
+                            class="inline-block mt-2 px-2.5 py-1 text-xs font-semibold rounded-full">
+                        </span>
+                    </div>
+
+                </div>
+
+                <hr class="my-6 border-gray-100">
+
+                <div class="grid grid-cols-1 gap-5">
+
+                    {{-- Email --}}
+                    <div class="flex items-start gap-3 text-sm">
+                        <div class="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 shrink-0">
+                            <i class="bi bi-envelope"></i>
+                        </div>
+
+                        <div>
+                            <p class="text-xs text-gray-400 font-medium uppercase tracking-wider">
+                                Email
+                            </p>
+                            <p id="admin-modal-email"
+                                class="text-gray-700 font-medium break-all">
+                            </p>
+                        </div>
+                    </div>
+
+                    {{-- Nomor HP --}}
+                    <div class="flex items-start gap-3 text-sm">
+                        <div class="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 shrink-0">
+                            <i class="bi bi-telephone"></i>
+                        </div>
+
+                        <div>
+                            <p class="text-xs text-gray-400 font-medium uppercase tracking-wider">
+                                No. Telepon
+                            </p>
+                            <p id="admin-modal-no-hp"
+                                class="text-gray-700 font-medium">
+                            </p>
+                        </div>
+                    </div>
+
+                    {{-- Alamat --}}
+                    <div class="flex items-start gap-3 text-sm">
+                        <div class="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 shrink-0">
+                            <i class="bi bi-geo-alt"></i>
+                        </div>
+
+                        <div>
+                            <p class="text-xs text-gray-400 font-medium uppercase tracking-wider">
+                                Alamat
+                            </p>
+                            <p id="admin-modal-alamat"
+                                class="text-gray-700 font-medium">
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            {{-- Footer --}}
+            <div class="bg-gray-50 px-6 py-4 flex justify-end">
+                <button type="button"
+                    onclick="closeAdminUserProfile()"
+                    class="px-5 py-2 text-sm font-bold text-gray-700 bg-white
+                    border border-gray-300 rounded-xl hover:bg-gray-50 transition shadow-sm">
+                    Tutup
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+<script>
+    function showAdminUserProfile(button) {
+        const data = button.dataset;
+
+        const name = data.name || 'User';
+        const foto = data.foto || '';
+
+        // Isi informasi profil
+        document.getElementById('admin-modal-name').textContent = name;
+        document.getElementById('admin-modal-role').textContent = data.role || '-';
+        document.getElementById('admin-modal-email').textContent = data.email || '-';
+        document.getElementById('admin-modal-no-hp').textContent = data.noHp || '-';
+        document.getElementById('admin-modal-alamat').textContent = data.alamat || '-';
+
+        // Status akun
+        const status = document.getElementById('admin-modal-status');
+        status.textContent = data.status || '-';
+
+        status.className = 'inline-block mt-2 px-2.5 py-1 text-xs font-semibold rounded-full';
+
+        if (data.status === 'Aktif') {
+            status.classList.add('bg-emerald-100', 'text-emerald-800');
+        } else {
+            status.classList.add('bg-gray-200', 'text-gray-600');
+        }
+
+        // Foto profil dan fallback inisial
+        const image = document.getElementById('admin-modal-foto');
+        const fallback = document.getElementById('admin-modal-foto-fallback');
+
+        fallback.textContent = name.trim().charAt(0).toUpperCase() || 'U';
+
+        if (foto) {
+            image.src = foto;
+            image.classList.remove('hidden');
+            fallback.classList.add('hidden');
+
+            image.onerror = function () {
+                image.classList.add('hidden');
+                fallback.classList.remove('hidden');
+            };
+        } else {
+            image.removeAttribute('src');
+            image.classList.add('hidden');
+            fallback.classList.remove('hidden');
+        }
+
+        // Buka modal
+        document.getElementById('adminUserProfileModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeAdminUserProfile() {
+        document.getElementById('adminUserProfileModal').classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+
+    // Tutup modal menggunakan tombol Escape
+    window.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            closeAdminUserProfile();
+        }
+    });
+</script>
+
 
 @endsection

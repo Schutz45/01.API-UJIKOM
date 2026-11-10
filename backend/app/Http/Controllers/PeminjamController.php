@@ -27,7 +27,7 @@ class PeminjamController extends Controller
 
             'alat_id'           =>  ['required', 'array', 'min:1'],
             'alat_id.*'         =>  ['required', 'integer', 'exists:alat,id', 'distinct'],
-            
+
             'jumlah'            =>  ['required', 'array'],
             'jumlah.*'          =>  ['required', 'integer', 'min:1'],
         ]);
@@ -80,14 +80,29 @@ class PeminjamController extends Controller
 
             DB::commit();
 
-            // Kirim notifikasi ke Peminjam bahwa pengajuan telah diterima
-            \App\Services\NotifikasiService::pengajuanDiajukan($peminjaman);
+            // Kirim notifikasi secara terpisah.
+            // Kegagalan notifikasi tidak membatalkan pengajuan yang sudah tersimpan.
+            try {
+                \App\Services\NotifikasiService::pengajuanDiajukan($peminjaman);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error(
+                    'Gagal mengirim notifikasi pengajuan peminjaman.',
+                    [
+                        'peminjaman_id' => $peminjaman->id,
+                        'error' => $e->getMessage(),
+                    ]
+                );
+            }
 
-            return redirect()->route('peminjam.riwayat')->with('success', 'Pengajuan peminjaman berhasil dikirim.');
-        } catch (\Exception $e) {
-            DB::rollback();
-            return redirect()->back()->with('error', 'Gagal mengajukan peminjaman: ' . $e->getMessage());
-        }
+            return redirect()
+                ->route('peminjam.riwayat')
+                ->with('success', 'Pengajuan peminjaman berhasil dikirim.');
+            } catch (\Throwable $e) {
+                DB::rollback();
+
+                return redirect()->back()
+                    ->with('error', 'Gagal mengajukan peminjaman: ' . $e->getMessage());
+            }
     }
 
     // Melihat riwayat peminjaman user yang sedang login
@@ -104,43 +119,79 @@ class PeminjamController extends Controller
     public function ajukanPengembalian($id)
     {
         try {
-            $peminjaman = Peminjaman::findOrFail($id);
+            // Proses perubahan status menggunakan transaksi database.
+            $peminjaman = DB::transaction(function () use ($id) {
 
-            // Hanya peminjaman aktif yang bisa diajukan untuk pengembalian
-            if (!in_array($peminjaman->status, ['dipinjam', 'telat'])) {
-                return redirect()
-                    ->back()
-                    ->with('error', 'Peminjaman ini tidak dapat diajukan untuk pengembalian.');
-            }
+                // Cari peminjaman yang benar-benar milik pengguna login.
+                // lockForUpdate mencegah proses bersamaan mengubah data yang sama.
+                $peminjaman = Peminjaman::where('user_id', auth()->id())
+                    ->lockForUpdate()
+                    ->findOrFail($id);
 
-            // Pastikan peminjaman tersebut milik user yang sedang login
-            if ($peminjaman->user_id !== auth()->id()) {
-                return redirect()
-                    ->back()
-                    ->with('error', 'Anda tidak memiliki akses ke peminjaman ini.');
-            }
+                // Hanya peminjaman aktif yang dapat diajukan untuk pengembalian.
+                if (!in_array($peminjaman->status, ['dipinjam', 'telat'], true)) {
+                    throw new \DomainException(
+                        'Peminjaman ini tidak dapat diajukan untuk pengembalian.'
+                    );
+                }
 
-            // Cegah pengajuan pengembalian berulang
-            if ($peminjaman->permintaan_pengembalian) {
-                return redirect()
-                    ->back()
-                    ->with('error', 'Pengembalian untuk peminjaman ini sudah diajukan.');
-            }
+                // Cegah pengajuan pengembalian berulang.
+                if ($peminjaman->permintaan_pengembalian) {
+                    throw new \DomainException(
+                        'Pengembalian untuk peminjaman ini sudah diajukan.'
+                    );
+                }
 
-            // Tandai bahwa peminjam meminta pengembalian
-            $peminjaman->permintaan_pengembalian = true;
-            $peminjaman->save();
+                // Simpan permintaan pengembalian.
+                $peminjaman->update([
+                    'permintaan_pengembalian' => true,
+                ]);
 
-            // TAHAP 2: Notifikasi otomatis ke Petugas untuk pemeriksaan pengembalian
+                return $peminjaman;
+            });
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+
+            return redirect()->back()
+                ->with('error', 'Peminjaman tidak ditemukan atau Anda tidak memiliki akses.');
+
+        } catch (\DomainException $e) {
+
+            return redirect()->back()
+                ->with('error', $e->getMessage());
+
+        } catch (\Throwable $e) {
+
+            \Illuminate\Support\Facades\Log::error(
+                'Gagal mengajukan pengembalian.',
+                [
+                    'peminjaman_id' => $id,
+                    'user_id' => auth()->id(),
+                    'error' => $e->getMessage(),
+                ]
+            );
+
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan saat mengajukan pengembalian.');
+        }
+
+        // Kirim notifikasi setelah transaksi berhasil.
+        // Kegagalan notifikasi tidak membatalkan permintaan pengembalian.
+        try {
             \App\Services\NotifikasiService::permintaanPengembalian($peminjaman);
 
-            return redirect()
-                ->back()
-                ->with('success', 'Permintaan pengembalian berhasil dikirim kepada Petugas.');
-        } catch (\Exception $e) {
-            return redirect()
-                ->back()
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+
+            \Illuminate\Support\Facades\Log::error(
+                'Gagal mengirim notifikasi permintaan pengembalian.',
+                [
+                    'peminjaman_id' => $peminjaman->id,
+                    'error' => $e->getMessage(),
+                ]
+            );
         }
+
+        return redirect()->back()
+            ->with('success', 'Permintaan pengembalian berhasil dikirim kepada Petugas.');
     }
 }

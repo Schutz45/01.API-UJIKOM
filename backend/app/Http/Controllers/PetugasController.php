@@ -43,7 +43,7 @@ class PetugasController extends Controller
         $request->validate([
             'unit'              =>  ['required', 'array', 'min:1'],
             'unit.*'            =>  ['required', 'array', 'min:1'],
-            'unit.*.*'          =>  ['required', 'integer', 'exists:unit_alat,id'],
+            'unit.*.*' => ['required', 'integer', 'distinct', 'exists:unit_alat,id'],
         ], [
             'unit.required'     =>  'Anda harus memilih minimal satu unit alat.',
             'unit.*.min'        =>  'Jumlah unit yang dipilih harus sesuai dengan jumlah yang dipinjam.',
@@ -54,9 +54,34 @@ class PetugasController extends Controller
         try {
             $peminjaman =   Peminjaman::with('detailPinjam.alat')->lockForUpdate()->findOrFail($id);
 
+            // Pastikan peminjaman memiliki detail alat.
+            if ($peminjaman->detailPinjam->isEmpty()) {
+                throw new \Exception('Peminjaman tidak memiliki detail alat.');
+            }
+
+            // Pastikan semua kelompok alat yang dikirim memang termasuk peminjaman.
+            $alatIdsDiajukan = $peminjaman->detailPinjam
+                ->pluck('alat_id')
+                ->map(fn ($id) => (string) $id)
+                ->all();
+
+            $alatIdsDikirim = array_map(
+                'strval',
+                array_keys($request->input('unit', []))
+            );
+
+            sort($alatIdsDiajukan);
+            sort($alatIdsDikirim);
+
+            if ($alatIdsDiajukan !== $alatIdsDikirim) {
+                throw new \Exception('Data pilihan alat tidak sesuai dengan detail peminjaman.');
+            }
+
             // Pastikan hanya pengajuan yang bisa disetujui
             if (!$peminjaman->canTransitionTo('dipinjam')) {
-                return redirect()->back()->with('error', "Peminjaman ini berstatus '{$peminjaman->status}' dan tidak dapat disetujui.");
+                throw new \Exception(
+                    "Peminjaman ini berstatus '{$peminjaman->status}' dan tidak dapat disetujui."
+                );
             }
 
             // Validasi & alokasikan unit pilihan Petugas
@@ -64,10 +89,19 @@ class PetugasController extends Controller
                 $unitIds   = $request->unit[$detail->alat_id] ?? [];
                 $unitIds   = array_map('intval', $unitIds);
 
+                if (count(array_unique($unitIds)) !== count($unitIds)) {
+                    throw new \Exception('Terdapat unit yang dipilih lebih dari satu kali.');
+                }
+
                 // Jumlah unit yang dipilih harus sama dengan jumlah yang diajukan
                 if (count($unitIds) !== (int) $detail->jumlah) {
                     $alat = $detail->alat;
-                    throw new \Exception("Jumlah unit yang dipilih untuk alat '{$alat->nama_alat}' (#{count($unitIds)}) harus sama dengan jumlah pinjam ({$detail->jumlah}).");
+                    $namaAlat = $alat->nama_alat ?? 'Alat tidak ditemukan';
+
+                    throw new \Exception(
+                        "Jumlah unit yang dipilih untuk alat '{$namaAlat}' (" . count($unitIds) .
+                        ") harus sama dengan jumlah pinjam ({$detail->jumlah})."
+                    );
                 }
 
                 // Pastikan semua unit milik alat yang benar DAN berstatus tersedia (lock untuk antisipasi race condition)
@@ -79,7 +113,11 @@ class PetugasController extends Controller
 
                 if ($units->count() !== count($unitIds)) {
                     $alat = $detail->alat;
-                    throw new \Exception("Beberapa unit untuk alat '{$alat->nama_alat}' tidak tersedia atau bukan milik alat tersebut. Silakan pilih ulang.");
+                    $namaAlat = $alat->nama_alat ?? 'Alat tidak ditemukan';
+
+                    throw new \Exception(
+                        "Beberapa unit untuk alat '{$namaAlat}' tidak tersedia atau bukan milik alat tersebut. Silakan pilih ulang."
+                    );
                 }
 
                 // Tandai unit sebagai dipinjam dan masukkan ke pivot detail_pinjam_unit
@@ -94,7 +132,7 @@ class PetugasController extends Controller
 
             DB::commit();
             return redirect()->route('petugas.peminjaman.index')->with('success', 'Peminjaman disetujui dan unit alat berhasil dialokasikan.');
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollback();
             return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
@@ -108,6 +146,7 @@ class PetugasController extends Controller
             'denda'             =>  'nullable|integer|min:0',
         ]);
 
+        $alatRusak = [];
         DB::beginTransaction();
 
         try {
@@ -150,13 +189,16 @@ class PetugasController extends Controller
             // Tanggal Pengembalian menggunakan tanggal server
             $tglKembali = now();
 
-            // Hitung keterlambatan
             $tanggalRencana = \Carbon\Carbon::parse($peminjaman->tgl_kembali_plan);
 
-            $hariTerlambat  = 0;
+            $hariTerlambat = 0;
 
-            if ($tglKembali->startOfDay()->gt($tanggalRencana->startOfDay())) {
-                $hariTerlambat = $tanggalRencana->diffInDays($tglKembali->startOfDay());
+            // Gunakan salinan objek agar waktu pengembalian asli tidak berubah
+            $tglKembaliTanggal = $tglKembali->copy()->startOfDay();
+            $tanggalRencanaTanggal = $tanggalRencana->copy()->startOfDay();
+
+            if ($tglKembaliTanggal->gt($tanggalRencanaTanggal)) {
+                $hariTerlambat = (int) $tanggalRencanaTanggal->diffInDays($tglKembaliTanggal);
             }
 
             // Denda keterlambatan Rp 1.000 per hari
@@ -209,12 +251,12 @@ class PetugasController extends Controller
                 $detail->update(['jumlah_rusak' => $jmlRusak]);
 
                 if ($jmlRusak > 0 && $alat) {
-                    \App\Services\NotifikasiService::alatRusakBaru($alat, $jmlRusak);
+                    $alatRusak[] = [
+                        'alat' => $alat,
+                        'jumlah' => $jmlRusak,
+                    ];
                 }
             }
-
-            // Selesaikan notifikasi "Permintaan Pengembalian" yang sudah tidak relevan
-            \App\Services\NotifikasiService::selesaikanPermintaanPengembalian($peminjaman);
 
             // Ubah status peminjaman
             $peminjaman->update([
@@ -224,12 +266,44 @@ class PetugasController extends Controller
 
             DB::commit();
 
+            // Kirim notifikasi alat rusak setelah transaksi berhasil.
+            foreach ($alatRusak as $data) {
+                try {
+                    \App\Services\NotifikasiService::alatRusakBaru(
+                        $data['alat'],
+                        $data['jumlah']
+                    );
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::error(
+                        'Gagal mengirim notifikasi alat rusak.',
+                        [
+                            'alat_id' => $data['alat']->id,
+                            'jumlah_rusak' => $data['jumlah'],
+                            'error' => $e->getMessage(),
+                        ]
+                    );
+                }
+            }
+
+            // Hapus notifikasi permintaan pengembalian setelah transaksi berhasil.
+            try {
+                \App\Services\NotifikasiService::selesaikanPermintaanPengembalian($peminjaman);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error(
+                    'Gagal menyelesaikan notifikasi permintaan pengembalian.',
+                    [
+                        'peminjaman_id' => $peminjaman->id,
+                        'error' => $e->getMessage(),
+                    ]
+                );
+            }
+
             return redirect()
                 ->route('petugas.pengembalian.index')
                 ->with(
-                    'success', 
+                    'success',
                     'Pengembalian berhasil diproses. Total denda: Rp ' . number_format($totalDenda, 0, ',', '.'));
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollback();
 
             return back()
@@ -243,15 +317,23 @@ class PetugasController extends Controller
         try{
             $peminjaman = Peminjaman::findOrFail($id);
 
-            // Pastikan statusnya memang masih diajukan
-            if ($peminjaman->status == 'diajukan') {
-                $peminjaman->delete();
-                return redirect()->back()->with('success', 'Pengajuan peminjaman berhasil ditolak.');
+            // Pastikan status masih dapat diubah menjadi ditolak
+            if (!$peminjaman->canTransitionTo('ditolak')) {
+                return redirect()->back()
+                    ->with('error', 'Status peminjaman sudah berubah atau tidak dapat ditolak.');
             }
 
-            return redirect()->back()->with('error', 'Status peminjaman sudah berubah.');
+                // Ubah status tanpa menghapus riwayat peminjaman
+            $peminjaman->update([
+                'status' => 'ditolak',
+            ]);
+
+            return redirect()->back()
+                ->with('success', 'Pengajuan peminjaman berhasil ditolak.');
+
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
 
@@ -299,6 +381,7 @@ class PetugasController extends Controller
 
         // data laporan peminjaman
         $peminjamans = Peminjaman::with(['user', 'detailPinjam.alat'])
+            ->whereIn('status', ['dipinjam', 'dikembalikan'])
             ->when($dari, function ($query, $dari) {
                 return $query->whereDate('tgl_pinjam', '>=', $dari);
             })
@@ -326,7 +409,7 @@ class PetugasController extends Controller
             'sampai'
         ));
     }
-    
+
     public function cetakLaporan(Request $request)
     {
         $dari = $request->input('dari');
@@ -336,6 +419,7 @@ class PetugasController extends Controller
             'user',
             'detailPinjam.alat'
         ])
+        ->whereIn('status', ['dipinjam', 'dikembalikan'])
         ->when($dari, function ($query, $dari) {
             return $query->whereDate('tgl_pinjam', '>=', $dari);
         })

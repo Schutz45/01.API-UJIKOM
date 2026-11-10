@@ -2,7 +2,7 @@
 
 @section('title', 'Kelola Peminjaman - Panel Admin')
 @section('header-title', 'Manajemen Transaksi Peminjaman')
-    
+
 @section('content')
     <div class="bg-white rounded-lg shadow-sm overflow-hidden border border-b-gray-200">
         <div class="p-5 border-b border-gray-200 bg-gray-50">
@@ -115,19 +115,40 @@
                 <tbody class="text-gray-700 text-sm">
                     @forelse ($peminjamans as $peminjaman)
                         <tr class="hover:bg-gray-50 transition align-top">
+
                             <td class="py-3 px-4 border-b font-medium text-gray-900 whitespace-nowrap">
-                                <button type="button" 
-                                    onclick="showUserModal({
-                                        name: '{{ addslashes($peminjaman->user->name ?? 'User') }}',
-                                        email: '{{ addslashes($peminjaman->user->email ?? '-') }}',
-                                        no_hp: '{{ addslashes($peminjaman->user->no_hp ?? '-') }}',
-                                        alamat: '{{ addslashes($peminjaman->user->alamat ?? '-') }}',
-                                        foto: '{{ $peminjaman->user->foto_profile ? asset('storage/' . $peminjaman->user->foto_profile) : 'https://ui-avatars.com/api/?name=' . urlencode($peminjaman->user->name ?? 'User') }}'
-                                    })"
-                                    class="text-blue-600 hover:text-blue-800 hover:underline text-left font-bold transition">
-                                    {{ $peminjaman->user->name ?? 'User Dihapus' }}
-                                </button>
+                                <div class="flex items-center gap-3">
+
+                                    {{-- Foto Profil --}}
+                                    @if($peminjaman->user?->foto_profile)
+                                        <img
+                                            src="{{ asset('storage/' . $peminjaman->user->foto_profile) }}"
+                                            alt="Foto {{ $peminjaman->user->name }}"
+                                            class="w-10 h-10 rounded-full object-cover border border-gray-200 shrink-0"
+                                        >
+                                    @else
+                                        <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-semibold shrink-0">
+                                            {{ strtoupper(substr($peminjaman->user->name ?? 'U', 0, 1)) }}
+                                        </div>
+                                    @endif
+
+                                    {{-- Nama Peminjam --}}
+                                    <button
+                                        type="button"
+                                        onclick="showUserModal({
+                                            name: {{ Js::from($peminjaman->user?->name ?? 'User Dihapus') }},
+                                            email: {{ Js::from($peminjaman->user?->email ?? '-') }},
+                                            no_hp: {{ Js::from($peminjaman->user?->no_hp ?? '-') }},
+                                            alamat: {{ Js::from($peminjaman->user?->alamat ?? '-') }},
+                                            foto: {{ Js::from($peminjaman->user?->foto_profile ? asset('storage/' . $peminjaman->user->foto_profile) : 'https://ui-avatars.com/api/?name=User') }}
+                                        })"
+                                        class="text-blue-600 hover:text-blue-800 hover:underline text-left font-bold transition">
+                                        {{ $peminjaman->user->name ?? 'User Dihapus' }}
+                                    </button>
+
+                                </div>
                             </td>
+
                             <td class="py-3 px-4 border-b min-w-[250px]">
                                 <ul class="list-disc list-inside space-y-1">
                                     @foreach ($peminjaman->detailPinjam as $detail)
@@ -165,7 +186,7 @@
                                     <!-- Form Ubah Status Cepat -->
                                     @if($peminjaman->status !== 'dikembalikan')
                                         @if($peminjaman->status === 'diajukan')
-                                            <button type="button" 
+                                            <button type="button"
                                                 onclick="openAlokasiModal({{ $peminjaman->id }}, {{ json_encode($peminjaman->detailPinjam) }})"
                                                 class="w-full bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold px-2 py-1.5 rounded transition shadow-sm">
                                                 Alokasi & Setujui
@@ -279,7 +300,7 @@
                     units.forEach(unit => {
                         unitOptionsHtml += `
                             <label class="flex items-center gap-2 p-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-blue-50 text-xs font-mono transition has-[:checked]:bg-blue-50 has-[:checked]:border-blue-500">
-                                <input type="checkbox" name="unit[${detail.alat_id}][]" value="${unit.id}" 
+                                <input type="checkbox" name="unit[${detail.alat_id}][]" value="${unit.id}"
                                     class="rounded text-blue-600 focus:ring-blue-500 border-gray-300 w-3.5 h-3.5"
                                     onchange="checkAlokasiValidation()">
                                 <span>${unit.nomor_seri}</span>
