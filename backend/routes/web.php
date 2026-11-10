@@ -56,9 +56,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('/pengembalian/{id}',               [AdminController::class, 'storePengembalian'])  ->name('pengembalian.store');
     Route::get('/pengembalian',                     [AdminController::class, 'indexPengembalian'])  ->name('pengembalian.index');
     Route::get("/pengembalian/{id}",                     [AdminController::class, "showPengembalian"])  ->name("pengembalian.show");
-    
-    
-    
+
+
+
 
     // Log Aktivitas
     Route::get('/log-aktivitas',                    [AdminController::class, 'indexLogAktivitas'])->name('log_aktivitas.index');
@@ -71,14 +71,14 @@ Route::middleware(['auth', 'role:petugas'])->prefix('petugas')->name('petugas.')
     Route::get('/peminjaman/{id}/alokasi',      [PetugasController::class, 'alokasiPeminjaman'])->name('peminjaman.alokasi');
     Route::post('/peminjaman/{id}/setujui',     [PetugasController::class, 'setujuiPeminjaman'])->name('peminjaman.setujui');
     Route::post('/peminjaman/{id}/tolak',       [PetugasController::class, 'tolakPeminjaman'])->name('peminjaman.tolak');
-    
+
     // Pengembalian & Denda
     Route::get('/pengembalian',                 [PetugasController::class, 'indexPengembalian'])->name('pengembalian.index');
     Route::get('/pengembalian/{id}/proses',     [PetugasController::class, 'createPengembalian'])->name('pengembalian.create');
     Route::post('/pengembalian/{id}/proses',    [PetugasController::class, 'prosesPengembalian'])->name('pengembalian.proses');
 
     // Cetak Laporan
-    Route::get('/laporan',                      [PetugasController::class, 'indexLaporan'])->name('laporan.index'); 
+    Route::get('/laporan',                      [PetugasController::class, 'indexLaporan'])->name('laporan.index');
     Route::get('/laporan/cetak',                [PetugasController::class, 'cetakLaporan'])->name('laporan.cetak');
 });
 
@@ -93,8 +93,13 @@ Route::middleware(['auth', 'role:peminjam'])->prefix('peminjam')->name('peminjam
 
 // Route Tamu (Belum Login)
 Route::middleware('guest')->group(function () {
+    // Login
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
+
+    // Register
+    Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
+    Route::post('/register', [AuthController::class, 'register'])->name('register.store');
 });
 
 // Route Logout (Harus sudah login)
@@ -116,6 +121,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/badges', [NotifikasiController::class, 'badges'])->name('badges');
 
     // Profil sendiri (semua role)
-    Route::put('/profil/foto',   [ProfileController::class, 'updateFoto'])  ->name('profil.foto.update');
-    Route::delete('/profil/foto', [ProfileController::class, 'destroyFoto']) ->name('profil.foto.destroy');
+    Route::get('/profil', [ProfileController::class, 'index'])->name('profil.index');
+    Route::put('/profil', [ProfileController::class, 'update'])->name('profil.update');
+
+    Route::put('/profil/foto', [ProfileController::class, 'updateFoto'])->name('profil.foto.update');
+    Route::delete('/profil/foto', [ProfileController::class, 'destroyFoto'])->name('profil.foto.destroy');
+
+    Route::put('/profil/banner', [ProfileController::class, 'updateBanner'])->name('profil.banner.update');
+    Route::delete('/profil/banner', [ProfileController::class, 'destroyBanner'])->name('profil.banner.destroy');
 });

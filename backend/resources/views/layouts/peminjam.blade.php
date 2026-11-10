@@ -122,10 +122,10 @@
                     alt=""
                     class="absolute inset-0
                         w-full h-full
-                        object-cover 
+                        object-cover
                         object-[10%_center]
                         opacity-45">
-                
+
                 {{-- Lapisan gelap agar menu tetap terbaca --}}
                 <div class="absolute inset-0 bg-slate-950/25"></div>
 
@@ -181,6 +181,13 @@
 
                     {{-- Dropdown Menu Foto Peminjam --}}
                     <div id="profileMenuDropdownPeminjam" class="hidden absolute bottom-full left-0 mb-2 w-48 bg-white rounded-xl shadow-xl border border-slate-200 z-50 overflow-hidden text-slate-800">
+                        <a href="{{ route('profil.index') }}"
+                        class="w-full flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-slate-50 transition">
+                            <i class="bi bi-person-circle"></i>
+                            Profil Saya
+                        </a>
+
+<div class="border-t border-slate-100"></div>
                         <form id="formGantiFotoPeminjam" action="{{ route('profil.foto.update') }}" method="POST" enctype="multipart/form-data" class="hidden">
                             @csrf
                             @method('PUT')
@@ -455,7 +462,7 @@
                 notificationList.innerHTML = notifications.map(n => {
                     const dibacaClass = n.dibaca ? '' : 'bg-indigo-50/50';
                     const icon = n.jenis === 'peminjaman' ? 'bi-box-seam' : (n.jenis === 'pengembalian' ? 'bi-arrow-left-right' : 'bi-bell');
-                    
+
                     return `
                         <div class="relative border-b border-slate-50 last:border-0">
                             <form id="form-notif-${n.id}" method="POST" action="{{ url('/notifikasi') }}/${n.id}/dibaca" class="hidden">
@@ -579,11 +586,11 @@
                 }
             });
         }
-        
+
         // Otomatis Submit saat pilih foto Peminjam
         const inputGantiFotoPeminjam = document.getElementById('inputGantiFotoPeminjam');
         const formGantiFotoPeminjam = document.getElementById('formGantiFotoPeminjam');
-        
+
         if (inputGantiFotoPeminjam && formGantiFotoPeminjam) {
             inputGantiFotoPeminjam.addEventListener('change', function() {
                 if (this.files && this.files.length > 0) {

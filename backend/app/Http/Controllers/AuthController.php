@@ -6,9 +6,66 @@ use App\Models\LogAktivitas;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
+    // Menampilkan Form Register
+    public function showRegisterForm()
+    {
+        return view('auth.register');
+    }
+
+    // Memproses Register
+    public function register(Request $request)
+    {
+        // Validasi data pendaftaran
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:6', 'confirmed'],
+            'no_hp' => ['nullable', 'string', 'max:20', 'regex:/^[0-9]+$/'],
+            'alamat' => ['nullable', 'string', 'max:1000'],
+            'foto_profile' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ], [
+            'name.required' => 'Nama wajib diisi.',
+            'email.required' => 'Email wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
+            'email.unique' => 'Email sudah terdaftar.',
+            'password.required' => 'Password wajib diisi.',
+            'password.min' => 'Password minimal 6 karakter.',
+            'password.confirmed' => 'Konfirmasi password tidak cocok.',
+            'no_hp.regex' => 'Nomor HP hanya boleh berisi angka.',
+            'foto_profile.image' => 'File harus berupa gambar.',
+            'foto_profile.mimes' => 'Format foto harus JPG, JPEG, PNG, atau WEBP.',
+            'foto_profile.max' => 'Ukuran foto maksimal 2 MB.',
+        ]);
+
+        // Upload foto profil jika ada
+        $fotoProfile = null;
+
+        if ($request->hasFile('foto_profile')) {
+            $fotoProfile = $request->file('foto_profile')
+                ->store('profile', 'public');
+        }
+
+        // Membuat akun baru
+        User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'role' => 'peminjam',
+            'no_hp' => $validated['no_hp'] ?? null,
+            'alamat' => $validated['alamat'] ?? null,
+            'foto_profile' => $fotoProfile,
+        ]);
+
+        // Kembali ke halaman login
+        return redirect()->route('login')
+            ->with('success', 'Pendaftaran berhasil. Silakan login menggunakan akun Anda.');
+    }
+
+
     // Menampilkan Form Login
     public function showLoginForm()
     {

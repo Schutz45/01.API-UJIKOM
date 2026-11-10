@@ -30,7 +30,9 @@
                         $unitsTersedia = $detail->alat->unitAlat->where('status', 'tersedia');
                     @endphp
 
-                    <div class="border border-gray-200 rounded-xl overflow-hidden">
+                    <div class="border border-gray-200 rounded-xl overflow-hidden"
+                        data-alat-id="{{ $detail->alat_id }}"
+                        data-required-count="{{ (int) $detail->jumlah }}">
                         {{-- Header alat --}}
                         <div class="px-5 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
                             <div>
@@ -77,7 +79,7 @@
             {{-- Footer --}}
             <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                 <p class="text-xs text-gray-500" id="selectionInfo">Belum ada unit dipilih.</p>
-                <button type="submit" id="submitBtn"
+                <button type="submit" id="submitBtn" disabled
                     class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-lg text-sm font-bold transition shadow-sm">
                     <i class="bi bi-check-lg mr-1"></i> Setujui & Alokasikan
                 </button>
@@ -88,21 +90,57 @@
 
     <script>
         // Hitung total unit yang dipilih dan tampilkan di info
-        const checkboxes = document.querySelectorAll('input[type="checkbox"][name^="unit["]');
+        const alatCards = document.querySelectorAll('[data-alat-id]');
         const info = document.getElementById('selectionInfo');
         const submitBtn = document.getElementById('submitBtn');
 
         function updateInfo() {
-            const checked = document.querySelectorAll('input[type="checkbox"][name^="unit["]:checked');
-            const total = checked.length;
-            info.innerText = total + ' unit dipilih dari total yang dibutuhkan.';
-            submitBtn.disabled = total === 0;
-            submitBtn.classList.toggle('opacity-50', total === 0);
-            submitBtn.classList.toggle('cursor-not-allowed', total === 0);
+            let totalDipilih = 0;
+            let totalDibutuhkan = 0;
+            let semuaSesuai = true;
+
+            alatCards.forEach(card => {
+                const alatId = card.dataset.alatId;
+                const required = Number(card.dataset.requiredCount);
+
+                const checkboxes = card.querySelectorAll(
+                    `input[name="unit[${alatId}][]"]`
+                );
+
+                const jumlahDipilih = card.querySelectorAll(
+                    `input[name="unit[${alatId}][]"]:checked`
+                ).length;
+
+                totalDipilih += jumlahDipilih;
+                totalDibutuhkan += required;
+
+                if (jumlahDipilih !== required) {
+                    semuaSesuai = false;
+                }
+
+                // Batasi pilihan sesuai jumlah yang dibutuhkan.
+                checkboxes.forEach(cb => {
+                    cb.disabled = !cb.checked && jumlahDipilih >= required;
+                });
+            });
+
+            info.innerText =
+                `${totalDipilih} dari ${totalDibutuhkan} unit dipilih.`;
+
+            submitBtn.disabled = !semuaSesuai || totalDibutuhkan === 0;
+
+            submitBtn.classList.toggle('opacity-50', submitBtn.disabled);
+            submitBtn.classList.toggle('cursor-not-allowed', submitBtn.disabled);
         }
 
-        checkboxes.forEach(cb => cb.addEventListener('change', updateInfo));
+        alatCards.forEach(card => {
+            card.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                cb.addEventListener('change', updateInfo);
+            });
+        });
+
         updateInfo();
+
     </script>
 
 @endsection

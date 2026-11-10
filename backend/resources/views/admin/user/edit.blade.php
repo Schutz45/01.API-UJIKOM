@@ -70,8 +70,38 @@
 
         <div class="mb-6">
             <label class="block text-gray-700 text-sm font-semibold mb-2">No. HP</label>
-            <input type="text" name="no_hp" value="{{ old('no_hp', $user->no_hp) }}"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <input
+                type="text"
+                name="no_hp"
+                value="{{ old('no_hp', $user->no_hp) }}"
+                inputmode="numeric"
+                maxlength="20"
+                pattern="[0-9]*"
+                oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+
+            @error('no_hp')
+                <span class="text-red-500 text-xs">{{ $message }}</span>
+            @enderror
+        </div>
+
+        <div class="mb-6">
+            <label class="block text-gray-700 text-sm font-semibold mb-2">
+                Alamat
+            </label>
+
+            <textarea
+                name="alamat"
+                rows="3"
+                maxlength="1000"
+                placeholder="Masukkan alamat lengkap"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >{{ old('alamat', $user->alamat) }}</textarea>
+
+            @error('alamat')
+                <span class="text-red-500 text-xs">{{ $message }}</span>
+            @enderror
         </div>
 
         {{-- TOMBOL --}}

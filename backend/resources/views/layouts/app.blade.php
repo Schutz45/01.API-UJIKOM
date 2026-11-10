@@ -257,9 +257,21 @@
                 <input type="file" name="foto_profile" id="inputGantiFoto" accept="image/*" class="hidden">
             </form>
 
+            <a href="{{ route('profil.index') }}"
+            class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 transition">
+
+                <i class="bi bi-person-circle text-lg"></i>
+                <span>Profil Saya</span>
+
+            </a>
+
+            <hr>
+
             <button type="button" onclick="document.getElementById('inputGantiFoto').click()" class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition">
                 <i class="bi bi-camera"></i> Ganti Foto Profil
             </button>
+
+            <hr>
 
             @if(auth()->user()->foto_profile)
             <form id="formHapusFoto" action="{{ route('profil.foto.destroy') }}" method="POST" class="hidden">
@@ -681,7 +693,7 @@
     });
 
 </script>
-    
+
     {{-- Modal Konfirmasi Logout --}}
     <div id="logoutModal" class="fixed inset-0 z-[9999] hidden overflow-y-auto opacity-0 transition-opacity duration-300" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
@@ -754,13 +766,13 @@
         // Toggle Menu Profil
         const profileMenuButton = document.getElementById('profileMenuButton');
         const profileMenuDropdown = document.getElementById('profileMenuDropdown');
-        
+
         if (profileMenuButton) {
             profileMenuButton.addEventListener('click', function(event) {
                 event.stopPropagation();
                 profileMenuDropdown.classList.toggle('hidden');
             });
-            
+
             document.addEventListener('click', function(event) {
                 if (!profileMenuDropdown.contains(event.target) && event.target !== profileMenuButton) {
                     profileMenuDropdown.classList.add('hidden');
@@ -771,7 +783,7 @@
         // Otomatis Submit saat pilih foto
         const inputGantiFoto = document.getElementById('inputGantiFoto');
         const formGantiFoto = document.getElementById('formGantiFoto');
-        
+
         if (inputGantiFoto && formGantiFoto) {
             inputGantiFoto.addEventListener('change', function() {
                 if (this.files && this.files.length > 0) {
